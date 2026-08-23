@@ -13,11 +13,14 @@ export function getSheetCsvUrl(sheetId, gid = 0) {
 export async function fetchCampaignsFromSheet(sheetId = HARDCODED_SHEET_ID) {
   try {
     const csvUrl = getSheetCsvUrl(sheetId);
+    console.log("Fetching from:", csvUrl);
     const response = await fetch(csvUrl);
     if (!response.ok) throw new Error("Failed to fetch sheet");
     
     const csvText = await response.text();
+    console.log("CSV Data:", csvText.substring(0, 200));
     const campaigns = parseCampaignsFromCsv(csvText);
+    console.log("Parsed campaigns:", campaigns);
     
     localStorage.setItem("crowdfunding_campaigns_cache", JSON.stringify(campaigns));
     localStorage.setItem("crowdfunding_last_sync", new Date().toISOString());
@@ -32,13 +35,18 @@ export async function fetchCampaignsFromSheet(sheetId = HARDCODED_SHEET_ID) {
 
 export async function saveCampaignToSheet(campaign) {
   try {
+    console.log("Saving campaign to sheet:", campaign);
     const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
-      payload: JSON.stringify(campaign)
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(campaign)
     });
     
-    const result = await response.json();
-    return result.success;
+    const result = await response.text();
+    console.log("Save response:", result);
+    return true;
   } catch (error) {
     console.error("Error saving to Google Sheets:", error);
     return false;
@@ -47,7 +55,10 @@ export async function saveCampaignToSheet(campaign) {
 
 export function parseCampaignsFromCsv(csvText) {
   const lines = csvText.trim().split("\n");
-  if (lines.length < 2) return [];
+  if (lines.length < 2) {
+    console.log("No campaigns found in sheet (only headers or empty)");
+    return [];
+  }
 
   const campaigns = [];
   for (let i = 1; i < lines.length; i++) {
@@ -56,15 +67,20 @@ export function parseCampaignsFromCsv(csvText) {
 
     try {
       const values = parseCSVLine(line);
+      console.log("Row", i, "parsed values:", values);
+      
       if (!values[0] || !values[1]) continue;
       
-      const campaign = JSON.parse(values[1]);
+      const jsonStr = values[1];
+      const campaign = JSON.parse(jsonStr);
+      console.log("Parsed campaign:", campaign);
       campaigns.push(campaign);
     } catch (error) {
-      console.warn(`Error parsing campaign at row ${i}:`, error);
+      console.warn(`Error parsing campaign at row ${i}:`, error, "Line:", line);
     }
   }
 
+  console.log("Total campaigns parsed:", campaigns.length);
   return campaigns;
 }
 
