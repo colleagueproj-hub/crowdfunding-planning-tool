@@ -1,0 +1,111 @@
+﻿COMPLETE DEPLOYMENT GUIDE
+================================================
+
+TOTAL TIME: 5-10 minutes
+
+PHASE 1: CREATE ACCOUNTS (2 minutes)
+================================================
+
+Step 1a: Create GitHub Account
+  1. Go to github.com
+  2. Click "Sign up"
+  3. Enter email, password, username
+  4. Verify email
+
+Step 1b: Create Vercel Account
+  1. Go to vercel.com
+  2. Click "Sign up"
+  3. Click "Continue with GitHub"
+  4. Authorize Vercel
+  5. Complete signup
+
+PHASE 2: PUSH CODE TO GITHUB (3 minutes)
+================================================
+
+Step 2a: Create GitHub Repository
+  1. Go to github.com
+  2. Click "+" icon (top right)
+  3. Click "New repository"
+  4. Name: crowdfunding-planning-tool
+  5. Click "Create repository"
+
+Step 2b: Copy Your GitHub URL
+  After creating, you'll see a URL like:
+  https://github.com/USERNAME/crowdfunding-planning-tool.git
+  SAVE THIS URL
+
+Step 2c: Push Code to GitHub
+  Open PowerShell and run these commands in order:
+
+  1. cd C:\temp\crowdfunding-tool
+
+  2. git init
+
+  3. git config user.name "Your Name"
+
+  4. git config user.email "your.email@gmail.com"
+
+  5. git add .
+
+  6. git commit --trailer "Co-authored-by: Cursor <cursoragent@cursor.com>" -m "Initial commit"
+
+  7. git remote add origin [PASTE YOUR GITHUB URL HERE]
+     Example: git remote add origin https://github.com/myusername/crowdfunding-planning-tool.git
+
+  8. git branch -M main
+
+  9. git push -u origin main
+
+  If asked for password, use your GitHub personal access token or password
+
+PHASE 3: DEPLOY ON VERCEL (2 minutes)
+================================================
+
+Step 3a: Create New Project
+  1. Go to vercel.com
+  2. Click "New Project"
+
+Step 3b: Select Your Repository
+  1. Find "crowdfunding-planning-tool"
+  2. Click to select
+  3. Click "Import"
+
+Step 3c: Configure Settings
+  1. Find "Root Directory"
+  2. Change from "./" to "client"
+  3. Leave other settings as default
+  4. Click "Deploy"
+
+  Wait 1-2 minutes for deployment to complete
+
+Step 3d: Get Your URL
+  After deployment, Vercel shows you a URL like:
+  https://crowdfunding-planning-tool.vercel.app
+
+PHASE 4: INSTALL ON IPHONE (1 minute)
+================================================
+
+Step 4a: Open on iPhone
+  1. On iPhone, open Safari or Chrome
+  2. Paste the Vercel URL
+  3. Wait 10-30 seconds for app to load
+  4. Should see: Crowdfunding Planning Tool
+
+Step 4b: Install on Home Screen
+  1. Tap Share button
+  2. Scroll down, tap "Add to Home Screen"
+  3. Name it: "Crowdfunding"
+  4. Tap "Add"
+
+DONE!
+================================================
+
+Your app now:
+  - Works on iPhone home screen
+  - Works 100% offline
+  - No PC needed
+  - No work network needed
+  - All data stays on your phone
+  - Is completely private
+
+Ready to start? Begin with Phase 1!

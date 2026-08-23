@@ -1,0 +1,30 @@
+{
+  "name": "crowdfunding-planning-tool",
+  "version": "1.0.0",
+  "description": "Crowdfunding project planning, calendar, and budget management tool",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "node --watch server/index.js",
+    "client:dev": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "db:setup": "node server/scripts/setupDatabase.js",
+    "db:seed": "node server/scripts/seedDatabase.js",
+    "db:reset": "node server/scripts/resetDatabase.js"
+  },
+  "keywords": ["crowdfunding", "project-management", "planning", "budget"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.0",
+    "node-cron": "^3.0.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1"
+  }
+}
