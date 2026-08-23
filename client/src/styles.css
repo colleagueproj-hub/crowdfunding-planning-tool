@@ -46,6 +46,15 @@ body {
   font-size: 14px;
 }
 
+.sync-status {
+  padding: 8px 12px;
+  background: #d4edda;
+  color: #155724;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .btn-primary, .btn-secondary, .btn-small, .btn-danger {
   padding: 10px 16px;
   border: none;
@@ -383,7 +392,7 @@ body {
     width: 100%;
   }
 
-  .campaign-select, .btn-primary, .btn-secondary, .btn-small {
+  .campaign-select, .btn-primary, .btn-secondary, .btn-small, .sync-status {
     width: 100%;
   }
 

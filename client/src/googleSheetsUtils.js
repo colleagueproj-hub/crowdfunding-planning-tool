@@ -1,3 +1,6 @@
+const HARDCODED_SHEET_ID = "19Qir2g-4lZBJWuMvWudybqkIemqZxkeghEFfZsjJpfE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd2YkS903OtAm9rNBWggLvvUklk9QQs4lytTJwKyV9PRENM_9Uz3X52AcF8QhcH-VQkw/exec";
+
 export function extractSheetId(url) {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
   return match ? match[1] : null;
@@ -7,7 +10,7 @@ export function getSheetCsvUrl(sheetId, gid = 0) {
   return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
 }
 
-export async function fetchCampaignsFromSheet(sheetId) {
+export async function fetchCampaignsFromSheet(sheetId = HARDCODED_SHEET_ID) {
   try {
     const csvUrl = getSheetCsvUrl(sheetId);
     const response = await fetch(csvUrl);
@@ -27,6 +30,21 @@ export async function fetchCampaignsFromSheet(sheetId) {
   }
 }
 
+export async function saveCampaignToSheet(campaign) {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      payload: JSON.stringify(campaign)
+    });
+    
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    console.error("Error saving to Google Sheets:", error);
+    return false;
+  }
+}
+
 export function parseCampaignsFromCsv(csvText) {
   const lines = csvText.trim().split("\n");
   if (lines.length < 2) return [];
@@ -38,16 +56,9 @@ export function parseCampaignsFromCsv(csvText) {
 
     try {
       const values = parseCSVLine(line);
-      const campaign = {
-        id: values[0] || `campaign_${Date.now()}_${i}`,
-        name: values[1] || "Untitled",
-        currency: values[2] || "ILS",
-        owners: parseJsonArray(values[3]),
-        participants: parseJsonArray(values[4]),
-        planningItems: parseJsonArray(values[5]),
-        budgetItems: parseJsonArray(values[6]),
-        created_at: values[7] || new Date().toISOString(),
-      };
+      if (!values[0] || !values[1]) continue;
+      
+      const campaign = JSON.parse(values[1]);
       campaigns.push(campaign);
     } catch (error) {
       console.warn(`Error parsing campaign at row ${i}:`, error);
@@ -85,36 +96,14 @@ function parseCSVLine(line) {
   return result;
 }
 
-function parseJsonArray(jsonStr) {
-  try {
-    if (!jsonStr || jsonStr === '""' || jsonStr === "") return [];
-    if (jsonStr.startsWith('"') && jsonStr.endsWith('"')) {
-      jsonStr = jsonStr.slice(1, -1);
-    }
-    jsonStr = jsonStr.replace(/\\"/g, '"');
-    const parsed = JSON.parse(jsonStr);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    console.warn("Error parsing JSON array:", jsonStr);
-    return [];
-  }
-}
-
 export function getStoredSheetUrl() {
-  return localStorage.getItem("crowdfunding_sheet_url");
+  return localStorage.getItem("crowdfunding_sheet_url") || HARDCODED_SHEET_ID;
 }
 
 export function storeSheetUrl(url) {
   localStorage.setItem("crowdfunding_sheet_url", url);
 }
 
-export function clearStoredSheetUrl() {
-  localStorage.removeItem("crowdfunding_sheet_url");
-  localStorage.removeItem("crowdfunding_campaigns_cache");
-  localStorage.removeItem("crowdfunding_last_sync");
-}
-
-export function openSheetInGoogle(sheetId) {
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
-  window.open(url, "_blank");
+export function getDefaultSheetId() {
+  return HARDCODED_SHEET_ID;
 }

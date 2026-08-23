@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "./styles.css";
 import ConfigModal from "./ConfigModal";
-import { extractSheetId, fetchCampaignsFromSheet, getStoredSheetUrl, storeSheetUrl } from "./googleSheetsUtils";
+import { extractSheetId, fetchCampaignsFromSheet, getStoredSheetUrl, storeSheetUrl, saveCampaignToSheet, getDefaultSheetId } from "./googleSheetsUtils";
 
 export default function App() {
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [activeTab, setActiveTab] = useState("plan");
-  const [showConfigModal, setShowConfigModal] = useState(!getStoredSheetUrl());
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [sheetUrl, setSheetUrl] = useState(getStoredSheetUrl() || "");
   const [newCampaignName, setNewCampaignName] = useState("");
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
@@ -32,31 +32,39 @@ export default function App() {
     category: "marketing",
   });
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
+  const [syncStatus, setSyncStatus] = useState("✓ Synced");
 
   // Load campaigns from Google Sheets on mount
   useEffect(() => {
-    if (sheetUrl) {
-      const sheetId = extractSheetId(sheetUrl);
-      if (sheetId) {
-        fetchCampaignsFromSheet(sheetId).then(setCampaigns);
-      }
-    }
-  }, [sheetUrl]);
+    loadCampaigns();
+  }, []);
 
-  // Set first campaign as selected when campaigns load
-  useEffect(() => {
-    if (campaigns.length > 0 && !selectedCampaign) {
-      setSelectedCampaign(campaigns[0]);
+  const loadCampaigns = async () => {
+    const sheetId = getDefaultSheetId();
+    const loaded = await fetchCampaignsFromSheet(sheetId);
+    setCampaigns(loaded);
+    if (loaded.length > 0 && !selectedCampaign) {
+      setSelectedCampaign(loaded[0]);
     }
-  }, [campaigns, selectedCampaign]);
+  };
+
+  // Auto-save selected campaign when it changes
+  useEffect(() => {
+    if (selectedCampaign) {
+      saveCampaignToSheet(selectedCampaign);
+      setSyncStatus("✓ Saved");
+      setTimeout(() => setSyncStatus("✓ Synced"), 2000);
+    }
+  }, [selectedCampaign]);
 
   const handleConfigSheetUrl = (url) => {
     storeSheetUrl(url);
     setSheetUrl(url);
     setShowConfigModal(false);
+    loadCampaigns();
   };
 
-  const handleCreateCampaign = () => {
+  const handleCreateCampaign = async () => {
     if (!newCampaignName.trim()) return;
     const newCampaign = {
       id: `campaign_${Date.now()}`,
@@ -68,7 +76,12 @@ export default function App() {
       budgetItems: [],
       created_at: new Date().toISOString(),
     };
-    setCampaigns([...campaigns, newCampaign]);
+    
+    // Save to sheet
+    await saveCampaignToSheet(newCampaign);
+    
+    const updated = [...campaigns, newCampaign];
+    setCampaigns(updated);
     setSelectedCampaign(newCampaign);
     setNewCampaignName("");
     setShowNewCampaignForm(false);
@@ -201,15 +214,14 @@ export default function App() {
     setSelectedCampaign(updatedCampaign);
   };
 
-  if (showConfigModal) {
-    return <ConfigModal onConfig={handleConfigSheetUrl} />;
-  }
-
-  if (!selectedCampaign) {
+  if (!selectedCampaign && campaigns.length === 0) {
     return (
       <div className="container">
         <div className="header">
           <h1>Crowdfunding Planning Tool</h1>
+          <div className="header-controls">
+            <button onClick={() => setShowConfigModal(true)} className="btn-small">⚙️ Config</button>
+          </div>
         </div>
         <div style={{ textAlign: "center", padding: "40px" }}>
           <p>No campaigns yet. Create one to get started!</p>
@@ -236,11 +248,15 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {showConfigModal && (
+          <ConfigModal onConfig={handleConfigSheetUrl} />
+        )}
       </div>
     );
   }
 
-  const totalBudget = selectedCampaign.budgetItems.reduce((sum, item) => sum + item.amount, 0);
+  const totalBudget = selectedCampaign?.budgetItems.reduce((sum, item) => sum + item.amount, 0) || 0;
 
   return (
     <div className="container">
@@ -261,7 +277,7 @@ export default function App() {
           </select>
           <button onClick={() => setShowNewCampaignForm(true)} className="btn-small">+ Campaign</button>
           <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
-          <button onClick={() => setShowConfigModal(true)} className="btn-small">🔗 Sheet</button>
+          <span className="sync-status">{syncStatus}</span>
         </div>
       </div>
 
@@ -301,7 +317,7 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {selectedCampaign.planningItems.map(item => (
+              {selectedCampaign?.planningItems.map(item => (
                 <tr key={item.id}>
                   <td>{item.name}</td>
                   <td>{item.startDate}</td>
@@ -325,7 +341,7 @@ export default function App() {
             </tbody>
           </table>
 
-          {showAddItemModal && (
+          {showAddItemModal && selectedCampaign && (
             <div className="modal-overlay" onClick={() => setShowAddItemModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
                 <h2>{editingItemId ? "Edit Planning Item" : "Add Planning Item"}</h2>
@@ -438,7 +454,7 @@ export default function App() {
         <div className="tab-content">
           <h2>📅 Planning Timeline</h2>
           <div className="gantt-container">
-            {selectedCampaign.planningItems.length === 0 ? (
+            {selectedCampaign?.planningItems.length === 0 ? (
               <p style={{ textAlign: "center", padding: "20px" }}>No planning items yet</p>
             ) : (
               <table className="gantt-table">
@@ -475,7 +491,7 @@ export default function App() {
           </button>
 
           <div className="budget-summary">
-            <h3>Total Budget: {selectedCampaign.currency} {totalBudget.toFixed(2)}</h3>
+            <h3>Total Budget: {selectedCampaign?.currency} {totalBudget.toFixed(2)}</h3>
           </div>
 
           <table className="items-table">
@@ -488,7 +504,7 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {selectedCampaign.budgetItems.map(item => (
+              {selectedCampaign?.budgetItems.map(item => (
                 <tr key={item.id}>
                   <td>{item.description}</td>
                   <td>{item.category}</td>
@@ -539,7 +555,7 @@ export default function App() {
         </div>
       )}
 
-      {showCampaignSettings && (
+      {showCampaignSettings && selectedCampaign && (
         <div className="modal-overlay" onClick={() => setShowCampaignSettings(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Campaign Settings</h2>
