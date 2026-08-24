@@ -3,70 +3,36 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd2YkS903OtAm9
 
 export async function fetchCampaignsFromSheet(sheetId = HARDCODED_SHEET_ID) {
   try {
-    console.log("1. Starting fetch from Apps Script...");
-    console.log("2. URL:", APPS_SCRIPT_URL);
-    
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "GET",
-      mode: "cors"
-    });
-    
-    console.log("3. Response received:", response.status, response.statusText);
-    
-    if (!response.ok) {
-      console.log("4. Response not OK:", response.status);
-      throw new Error("Failed to fetch sheet: " + response.status);
-    }
-    
+    console.log("Fetching campaigns from Apps Script...");
+    const response = await fetch(APPS_SCRIPT_URL, { method: "GET" });
+    if (!response.ok) throw new Error("Failed to fetch");
     const result = await response.json();
-    console.log("5. JSON parsed:", result);
+    console.log("Campaigns loaded:", result.campaigns ? result.campaigns.length : 0);
     
-    let campaigns = [];
-    
-    if (Array.isArray(result)) {
-      console.log("6. Result is an array, using directly");
-      campaigns = result;
-    } else if (result.success && Array.isArray(result.campaigns)) {
-      console.log("6. Result is object with campaigns array");
-      campaigns = result.campaigns;
-    } else {
-      console.log("6. No campaigns in response");
-      return [];
-    }
-    
-    console.log("7. Campaigns found:", campaigns.length);
-    
+    const campaigns = Array.isArray(result) ? result : (result.campaigns || []);
     localStorage.setItem("crowdfunding_campaigns_cache", JSON.stringify(campaigns));
-    localStorage.setItem("crowdfunding_last_sync", new Date().toISOString());
-    
     return campaigns;
   } catch (error) {
-    console.error("ERROR in fetch:", error);
-    console.error("Error stack:", error.stack);
+    console.error("Error fetching:", error);
     const cached = localStorage.getItem("crowdfunding_campaigns_cache");
-    console.log("Returning cached:", cached ? "yes" : "no");
     return cached ? JSON.parse(cached) : [];
   }
 }
 
 export async function saveCampaignToSheet(campaign) {
   try {
-    console.log("Saving campaign:", campaign.id);
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(campaign),
-      mode: "cors"
-    });
+    console.log("Syncing campaign:", campaign.id);
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "save");
+    url.searchParams.append("id", campaign.id);
+    url.searchParams.append("data", JSON.stringify(campaign));
     
-    console.log("Save response status:", response.status);
+    const response = await fetch(url.toString(), { method: "GET" });
     const result = await response.json();
-    console.log("Save result:", result);
-    return result.success !== false;
+    console.log("Sync result:", result.success ? "SUCCESS" : "FAILED");
+    return result.success;
   } catch (error) {
-    console.error("Error saving:", error);
+    console.error("Error syncing:", error);
     return false;
   }
 }
