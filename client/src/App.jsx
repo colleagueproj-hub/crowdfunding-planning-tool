@@ -301,9 +301,12 @@ export default function App() {
             <span style={{ fontSize: "14px", color: "#d4af37" }}>{user.name} ({user.is_admin ? "Admin" : "User"})</span>
             <button onClick={handleLogout} className="btn-small">Logout</button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "15px", flex: 1, justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "15px", flex: 1, justifyContent: "center", flexDirection: "column" }}>
             <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" style={{ width: "150px", height: "150px", borderRadius: "6px" }} onError={(e) => { e.target.style.display = 'none'; }} />
-            <h1 style={{ marginBottom: "0" }}>🌿 Weeping Willow Tree</h1>
+            <div style={{ textAlign: "center" }}>
+              <h1 style={{ marginBottom: "5px", whiteSpace: "nowrap" }}>Weeping Willow Tree</h1>
+              <p style={{ marginBottom: "0", fontSize: "16px", color: "#d4af37" }}>Crowd sourcing campaign</p>
+            </div>
           </div>
           <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
             <span className="sync-status">{syncStatus}</span>
