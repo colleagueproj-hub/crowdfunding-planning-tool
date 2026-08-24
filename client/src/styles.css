@@ -152,11 +152,12 @@ body {
 }
 
 .tab-content {
-  background: #3a3a3a;
+  background: #5a5a5a;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   border: 2px solid #ffffff;
+  color: #ffffff;
 }
 
 .items-table {
@@ -167,22 +168,22 @@ body {
 }
 
 .items-table th {
-  background: #3a3a3a;
+  background: #4a4a4a;
   padding: 12px;
   text-align: left;
   font-weight: 600;
-  color: #d4af37;
-  border-bottom: 2px solid #404040;
+  color: #ffffff;
+  border-bottom: 2px solid #505050;
 }
 
 .items-table td {
   padding: 12px;
-  border-bottom: 1px solid #404040;
-  color: #d4af37;
+  border-bottom: 1px solid #505050;
+  color: #ffffff;
 }
 
 .items-table tbody tr:hover {
-  background: #3a3a3a;
+  background: #4a4a4a;
 }
 
 .badge {
