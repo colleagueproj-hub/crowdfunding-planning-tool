@@ -463,53 +463,116 @@ export default function App() {
 
       {activeTab === "calendar" && (
         <div className="tab-content">
-          <h2>📅 Project Timeline</h2>
+          <h2>📅 Project Timeline & Gantt Chart</h2>
           {selectedCampaign?.planningItems.length === 0 ? (
-            <p style={{ textAlign: "center", padding: "20px", color: "#b8956a" }}>No planning items yet</p>
+            <p style={{ textAlign: "center", padding: "20px", color: "#d4af37" }}>No planning items yet</p>
           ) : (
-            <div className="gantt-container">
-              <table className="gantt-table">
-                <thead>
-                  <tr>
-                    <th style={{ minWidth: "150px" }}>Task</th>
-                    <th style={{ minWidth: "100px" }}>Start Date</th>
-                    <th style={{ minWidth: "100px" }}>End Date</th>
-                    <th style={{ minWidth: "150px" }}>Status</th>
-                    <th style={{ minWidth: "300px" }}>Timeline</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedCampaign.planningItems.map((item, idx) => {
+            <div>
+              {/* Calendar View */}
+              <div style={{ marginBottom: "40px" }}>
+                <h3 style={{ marginBottom: "15px", color: "#d4af37" }}>📆 Events by Month</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px" }}>
+                  {selectedCampaign.planningItems.map((item) => {
                     const startDate = new Date(item.startDate);
                     const endDate = new Date(item.endDate);
-                    const daysSpan = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
-                    
                     return (
-                      <tr key={item.id}>
-                        <td style={{ fontWeight: "500" }}>{item.name}</td>
-                        <td>{item.startDate}</td>
-                        <td>{item.endDate}</td>
-                        <td><span className={`badge status-${item.status}`}>{item.status}</span></td>
-                        <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                            <div style={{ flex: 1, height: "30px", background: "#5a5a5a", borderRadius: "6px", overflow: "hidden", position: "relative" }}>
-                              <div
-                                className={`gantt-bar status-${item.status}`}
-                                style={{
-                                  width: Math.min(100, Math.max(5, (daysSpan / 100) * 100)) + "%",
-                                  height: "100%",
-                                  minWidth: "30px"
-                                }}
-                              ></div>
-                            </div>
-                            <span style={{ fontSize: "12px", color: "#b8956a", minWidth: "50px" }}>{daysSpan}d</span>
-                          </div>
-                        </td>
-                      </tr>
+                      <div key={item.id} style={{ background: "#3a3a3a", padding: "15px", borderRadius: "8px", border: "1px solid #505050" }}>
+                        <div style={{ color: "#d4af37", fontWeight: "600", marginBottom: "8px" }}>{item.name}</div>
+                        <div style={{ fontSize: "13px", color: "#b8956a", marginBottom: "5px" }}>
+                          📅 {startDate.toLocaleDateString()} → {endDate.toLocaleDateString()}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#d4af37", marginBottom: "5px" }}>
+                          👥 {item.owners?.length || 0} owner(s), {item.participants?.length || 0} participant(s)
+                        </div>
+                        <div>
+                          <span className={`badge status-${item.status}`}>{item.status}</span>
+                          {item.reminderEnabled && <span style={{ marginLeft: "8px", fontSize: "12px", color: "#d4af37" }}>🔔 {item.reminderDays}d reminder</span>}
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+              </div>
+
+              {/* Gantt Chart */}
+              <div>
+                <h3 style={{ marginBottom: "15px", color: "#d4af37" }}>📊 Gantt Chart Timeline</h3>
+                <div style={{ overflowX: "auto", paddingBottom: "20px" }}>
+                  <div style={{ minWidth: "800px" }}>
+                    {/* Timeline Header */}
+                    <div style={{ display: "flex", marginBottom: "20px", fontSize: "12px", color: "#d4af37", paddingLeft: "200px" }}>
+                      {Array.from({ length: 25 }).map((_, i) => (
+                        <div key={i} style={{ flex: 1, textAlign: "center", borderRight: "1px solid #404040", paddingRight: "5px" }}>
+                          +{i}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Gantt Bars */}
+                    {selectedCampaign.planningItems.map((item) => {
+                      const startDate = new Date(item.startDate);
+                      const endDate = new Date(item.endDate);
+                      const today = new Date();
+                      const daysFromToday = Math.max(0, Math.floor((startDate - today) / (1000 * 60 * 60 * 24)));
+                      const durationDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+                      const barStart = Math.max(0, daysFromToday);
+                      const barWidth = Math.min(24 - barStart, durationDays);
+
+                      return (
+                        <div key={item.id} style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}>
+                          <div style={{ width: "200px", color: "#d4af37", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {item.name}
+                          </div>
+                          <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center" }}>
+                            {/* Background grid */}
+                            {Array.from({ length: 25 }).map((_, i) => (
+                              <div key={i} style={{ flex: 1, borderRight: "1px solid #404040", height: "100%" }} />
+                            ))}
+                            
+                            {/* Bar */}
+                            <div
+                              style={{
+                                position: "absolute",
+                                left: `${(barStart / 25) * 100}%`,
+                                width: `${(barWidth / 25) * 100}%`,
+                                height: "30px",
+                                background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? "#d4af37" : "#5a5a5a",
+                                borderRadius: "4px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: item.status === "in-progress" ? "#1a1a1a" : "#d4af37",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                border: "1px solid #707070",
+                                minWidth: "40px"
+                              }}
+                            >
+                              {durationDays}d
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div style={{ marginTop: "20px", padding: "15px", background: "#3a3a3a", borderRadius: "6px", display: "flex", gap: "20px", flexWrap: "wrap", fontSize: "13px", color: "#d4af37" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "20px", height: "20px", background: "#5a5a5a", borderRadius: "3px" }}></div>
+                    Not Started
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "20px", height: "20px", background: "#d4af37", borderRadius: "3px" }}></div>
+                    In Progress
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ width: "20px", height: "20px", background: "#3a5a3a", borderRadius: "3px" }}></div>
+                    Completed
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
