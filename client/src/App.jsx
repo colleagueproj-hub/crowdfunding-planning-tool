@@ -72,10 +72,16 @@ export default function App() {
     if (!user?.is_admin || !selectedCampaign) return;
     if (!window.confirm(`Delete campaign "${selectedCampaign.name}"? This cannot be undone.`)) return;
     
-    // Mark as deleted by removing from array (not actually deleted from sheet, just hidden)
     const updated = campaigns.filter(c => c.id !== selectedCampaign.id);
     setCampaigns(updated);
     setSelectedCampaign(updated.length > 0 ? updated[0] : null);
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setUser(null);
+    setCampaigns([]);
+    setSelectedCampaign(null);
   };
 
   const handleSyncToSheet = async () => {
