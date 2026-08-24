@@ -275,7 +275,7 @@ export default function App() {
     );
   }
 
-  const totalBudget = selectedCampaign?.budgetItems.reduce((sum, item) => sum + item.amount, 0) || 0;
+  const totalBudget = (selectedCampaign?.budgetItems || []).reduce((sum, item) => sum + (item?.amount || 0), 0);
 
   return (
     <div className="container">

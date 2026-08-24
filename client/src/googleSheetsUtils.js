@@ -1,12 +1,13 @@
 const HARDCODED_SHEET_ID = "19Qir2g-4lZBJWuMvWudybqkIemqZxkeghEFfZsjJpfE";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwzdVxgDlv5QslNzamG_tP13t4x-YDKZuWDrotZ-Bxlp_f6J0lwCySVA6yLrk4bcJOlTw/exec";
 
-export async function loginUser(email, password) {
+export async function loginUser(email, password, name, isSignUp) {
   try {
     const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "login");
+    url.searchParams.append("action", isSignUp ? "signup" : "login");
     url.searchParams.append("email", email);
     url.searchParams.append("password", password);
+    if (name) url.searchParams.append("name", name);
     
     const response = await fetch(url.toString(), { method: "GET" });
     const result = await response.json();
@@ -30,7 +31,7 @@ export function logoutUser() {
   localStorage.removeItem("crowdfunding_user");
 }
 
-export async function fetchCampaignsFromSheet(sheetId = HARDCODED_SHEET_ID) {
+export async function fetchCampaignsFromSheet() {
   try {
     const response = await fetch(APPS_SCRIPT_URL, { method: "GET" });
     if (!response.ok) throw new Error("Failed to fetch");
