@@ -298,7 +298,7 @@ export default function App() {
       <div className="header">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-            <img src="/logo.png" alt="Logo" style={{ width: "40px", height: "40px", borderRadius: "6px" }} />
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" style={{ width: "40px", height: "40px", borderRadius: "6px" }} onError={(e) => { e.target.style.display = 'none'; }} />
             <h1>🌿 Weeping Willow Tree</h1>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
