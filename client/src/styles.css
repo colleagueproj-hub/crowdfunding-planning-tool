@@ -6,8 +6,8 @@
 
 body {
   font-family: "Georgia", "Garamond", serif;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2416 100%);
-  color: #e8dcc8;
+  background: #1a1a1a;
+  color: #d4af37;
   line-height: 1.6;
   min-height: 100vh;
 }
@@ -19,12 +19,12 @@ body {
 }
 
 .header {
-  background: linear-gradient(135deg, #2d2416 0%, #3d3428 100%);
+  background: #2a2a2a;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
   margin-bottom: 20px;
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
 }
 
 .header h1 {
@@ -42,6 +42,7 @@ body {
   height: 40px;
   border-radius: 6px;
   object-fit: cover;
+  border: 1px solid #404040;
 }
 
 .header-controls {
@@ -53,17 +54,17 @@ body {
 
 .campaign-select {
   padding: 8px 12px;
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
   border-radius: 6px;
   font-size: 14px;
   background: #1a1a1a;
-  color: #e8dcc8;
+  color: #d4af37;
 }
 
 .sync-status {
   padding: 8px 12px;
-  background: #4a7c59;
-  color: #e8dcc8;
+  background: #3a4a3a;
+  color: #d4af37;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
@@ -90,12 +91,12 @@ body {
 }
 
 .btn-secondary {
-  background: #5a5a5a;
-  color: #e8dcc8;
+  background: #404040;
+  color: #d4af37;
 }
 
 .btn-secondary:hover {
-  background: #6a6a6a;
+  background: #505050;
 }
 
 .btn-small {
@@ -110,34 +111,34 @@ body {
 }
 
 .btn-danger {
-  background: #a85a3a;
-  color: #e8dcc8;
+  background: #5a3a3a;
+  color: #d4af37;
 }
 
 .btn-danger:hover {
-  background: #b86a4a;
+  background: #6a4a4a;
 }
 
 .tabs {
   display: flex;
   gap: 0;
   margin-bottom: 20px;
-  background: #2d2416;
+  background: #2a2a2a;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
 }
 
 .tab {
   flex: 1;
   padding: 15px;
   border: none;
-  background: #3d3428;
+  background: #2a2a2a;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: #b8956a;
+  color: #808080;
   transition: all 0.2s;
 }
 
@@ -147,15 +148,15 @@ body {
 }
 
 .tab:hover {
-  background: #4a4a3a;
+  background: #3a3a3a;
 }
 
 .tab-content {
-  background: #2d2416;
+  background: #2a2a2a;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
 }
 
 .items-table {
@@ -166,22 +167,22 @@ body {
 }
 
 .items-table th {
-  background: #3d3428;
+  background: #3a3a3a;
   padding: 12px;
   text-align: left;
   font-weight: 600;
   color: #d4af37;
-  border-bottom: 2px solid #8b7355;
+  border-bottom: 2px solid #404040;
 }
 
 .items-table td {
   padding: 12px;
-  border-bottom: 1px solid #5a5a5a;
-  color: #e8dcc8;
+  border-bottom: 1px solid #404040;
+  color: #d4af37;
 }
 
 .items-table tbody tr:hover {
-  background: #3d3428;
+  background: #3a3a3a;
 }
 
 .badge {
@@ -193,8 +194,8 @@ body {
 }
 
 .status-not-started {
-  background: #5a5a5a;
-  color: #e8dcc8;
+  background: #404040;
+  color: #d4af37;
 }
 
 .status-in-progress {
@@ -203,18 +204,18 @@ body {
 }
 
 .status-completed {
-  background: #4a7c59;
-  color: #e8dcc8;
+  background: #3a4a3a;
+  color: #d4af37;
 }
 
 .reminder-enabled {
-  background: #c97c7c;
-  color: #fff;
+  background: #5a4a3a;
+  color: #d4af37;
 }
 
 .reminder-disabled {
-  background: #5a5a5a;
-  color: #e8dcc8;
+  background: #404040;
+  color: #d4af37;
 }
 
 .modal-overlay {
@@ -223,7 +224,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,7 +233,7 @@ body {
 }
 
 .modal {
-  background: #2d2416;
+  background: #2a2a2a;
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
@@ -240,7 +241,7 @@ body {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
 }
 
 .modal h2 {
@@ -259,11 +260,11 @@ body {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
   border-radius: 6px;
   font-size: 14px;
   background: #1a1a1a;
-  color: #e8dcc8;
+  color: #d4af37;
 }
 
 .input-field:focus {
@@ -285,7 +286,7 @@ body {
   gap: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #e8dcc8;
+  color: #d4af37;
 }
 
 .checkbox-label input {
@@ -298,7 +299,7 @@ body {
   gap: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #e8dcc8;
+  color: #d4af37;
   margin-bottom: 8px;
 }
 
@@ -308,9 +309,9 @@ body {
   gap: 8px;
   margin-bottom: 15px;
   padding: 10px;
-  background: #3d3428;
+  background: #3a3a3a;
   border-radius: 6px;
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
 }
 
 .modal-buttons {
@@ -324,10 +325,10 @@ body {
 }
 
 .settings-list {
-  background: #3d3428;
+  background: #3a3a3a;
   border-radius: 6px;
   margin-bottom: 15px;
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
 }
 
 .list-item {
@@ -335,8 +336,8 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 10px;
-  border-bottom: 1px solid #5a5a5a;
-  color: #e8dcc8;
+  border-bottom: 1px solid #404040;
+  color: #d4af37;
 }
 
 .list-item:last-child {
@@ -344,11 +345,11 @@ body {
 }
 
 .budget-summary {
-  background: #3d3428;
+  background: #3a3a3a;
   padding: 20px;
   border-radius: 6px;
   margin-bottom: 20px;
-  border: 1px solid #8b7355;
+  border: 1px solid #404040;
 }
 
 .budget-summary h3 {
@@ -367,18 +368,18 @@ body {
 }
 
 .gantt-table th {
-  background: #3d3428;
+  background: #3a3a3a;
   padding: 12px;
   text-align: left;
   font-weight: 600;
   color: #d4af37;
-  border-bottom: 2px solid #8b7355;
+  border-bottom: 2px solid #404040;
 }
 
 .gantt-table td {
   padding: 12px;
-  border-bottom: 1px solid #5a5a5a;
-  color: #e8dcc8;
+  border-bottom: 1px solid #404040;
+  color: #d4af37;
 }
 
 .gantt-bar {
@@ -388,7 +389,7 @@ body {
 }
 
 .gantt-bar.status-not-started {
-  background: #5a5a5a;
+  background: #404040;
 }
 
 .gantt-bar.status-in-progress {
@@ -396,7 +397,7 @@ body {
 }
 
 .gantt-bar.status-completed {
-  background: #4a7c59;
+  background: #3a4a3a;
 }
 
 .login-modal {
