@@ -68,11 +68,14 @@ export default function App() {
     setUser(userData);
   };
 
-  const handleLogout = () => {
-    logoutUser();
-    setUser(null);
-    setCampaigns([]);
-    setSelectedCampaign(null);
+  const handleDeleteCampaign = async () => {
+    if (!user?.is_admin || !selectedCampaign) return;
+    if (!window.confirm(`Delete campaign "${selectedCampaign.name}"? This cannot be undone.`)) return;
+    
+    // Mark as deleted by removing from array (not actually deleted from sheet, just hidden)
+    const updated = campaigns.filter(c => c.id !== selectedCampaign.id);
+    setCampaigns(updated);
+    setSelectedCampaign(updated.length > 0 ? updated[0] : null);
   };
 
   const handleSyncToSheet = async () => {
@@ -303,6 +306,9 @@ export default function App() {
           </select>
           {canCreateCampaign && (
             <button onClick={() => setShowNewCampaignForm(true)} className="btn-small">+ Campaign</button>
+          )}
+          {canCreateCampaign && selectedCampaign && (
+            <button onClick={handleDeleteCampaign} className="btn-small btn-danger">🗑️ Delete</button>
           )}
           {canEdit && (
             <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
