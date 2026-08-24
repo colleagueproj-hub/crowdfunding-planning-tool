@@ -302,7 +302,7 @@ export default function App() {
             <button onClick={handleLogout} className="btn-small">Logout</button>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "15px", flex: 1, justifyContent: "center" }}>
-            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" style={{ width: "70px", height: "70px", borderRadius: "6px" }} onError={(e) => { e.target.style.display = 'none'; }} />
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" style={{ width: "150px", height: "150px", borderRadius: "6px" }} onError={(e) => { e.target.style.display = 'none'; }} />
             <h1 style={{ marginBottom: "0" }}>🌿 Weeping Willow Tree</h1>
           </div>
           <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
