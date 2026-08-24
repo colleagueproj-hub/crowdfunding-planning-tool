@@ -1,14 +1,14 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./styles.css";
+import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
-import { extractSheetId, fetchCampaignsFromSheet, getStoredSheetUrl, storeSheetUrl, saveCampaignToSheet, getDefaultSheetId } from "./googleSheetsUtils";
+import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId } from "./googleSheetsUtils";
 
 export default function App() {
+  const [user, setUser] = useState(getLoggedInUser());
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [activeTab, setActiveTab] = useState("plan");
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [sheetUrl, setSheetUrl] = useState(getStoredSheetUrl() || "");
   const [newCampaignName, setNewCampaignName] = useState("");
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
   const [newOwnerName, setNewOwnerName] = useState("");
@@ -34,52 +34,52 @@ export default function App() {
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [syncStatus, setSyncStatus] = useState("✓ Synced");
 
-  // Load campaigns from Google Sheets on mount
   useEffect(() => {
-    loadCampaigns();
-  }, []);
-
-  const normalizeCampaign = (campaign) => {
-    return {
-      id: campaign.id || `campaign_${Date.now()}`,
-      name: campaign.name || "Untitled Campaign",
-      currency: campaign.currency || "ILS",
-      owners: Array.isArray(campaign.owners) ? campaign.owners : [],
-      participants: Array.isArray(campaign.participants) ? campaign.participants : [],
-      planningItems: Array.isArray(campaign.planningItems) ? campaign.planningItems : [],
-      budgetItems: Array.isArray(campaign.budgetItems) ? campaign.budgetItems : [],
-      created_at: campaign.created_at || new Date().toISOString(),
-    };
-  };
+    if (user) {
+      loadCampaigns();
+    }
+  }, [user]);
 
   const loadCampaigns = async () => {
-    const sheetId = getDefaultSheetId();
-    const loaded = await fetchCampaignsFromSheet(sheetId);
-    const normalized = loaded.map(normalizeCampaign);
-    setCampaigns(normalized);
-    if (normalized.length > 0 && !selectedCampaign) {
-      setSelectedCampaign(normalized[0]);
+    const loaded = await fetchCampaignsFromSheet(getDefaultSheetId());
+    setCampaigns(loaded);
+    if (loaded.length > 0 && !selectedCampaign) {
+      setSelectedCampaign(loaded[0]);
     }
   };
 
-  // Auto-save selected campaign when it changes
-  useEffect(() => {
-    if (selectedCampaign) {
-      // Store locally only - don't auto-save to sheet (CORS issue)
-      setSyncStatus("⚠️ Local changes (click Sync)");
-    }
-  }, [selectedCampaign]);
+  const normalizeCampaign = (campaign) => ({
+    id: campaign.id || `campaign_${Date.now()}`,
+    name: campaign.name || "Untitled Campaign",
+    currency: campaign.currency || "ILS",
+    owners: Array.isArray(campaign.owners) ? campaign.owners : [],
+    participants: Array.isArray(campaign.participants) ? campaign.participants : [],
+    planningItems: Array.isArray(campaign.planningItems) ? campaign.planningItems : [],
+    budgetItems: Array.isArray(campaign.budgetItems) ? campaign.budgetItems : [],
+    created_at: campaign.created_at || new Date().toISOString(),
+  });
+
+  const isOwner = selectedCampaign && selectedCampaign.owners.includes(user?.email);
+  const canEdit = isOwner || user?.is_admin;
+  const canCreateCampaign = user?.is_admin;
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setUser(null);
+    setCampaigns([]);
+    setSelectedCampaign(null);
+  };
 
   const handleSyncToSheet = async () => {
     if (!selectedCampaign) return;
     setSyncStatus("⏳ Syncing...");
     const success = await saveCampaignToSheet(selectedCampaign);
-    if (success) {
-      setSyncStatus("✓ Synced!");
-      setTimeout(() => setSyncStatus("⚠️ Local changes"), 3000);
-    } else {
-      setSyncStatus("❌ Sync failed (offline?)");
-    }
+    setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed");
+    setTimeout(() => setSyncStatus("✓ Synced"), 3000);
   };
 
   const handleCreateCampaign = async () => {
@@ -88,16 +88,14 @@ export default function App() {
       id: `campaign_${Date.now()}`,
       name: newCampaignName,
       currency: "ILS",
-      owners: [],
+      owners: [user.email],
       participants: [],
       planningItems: [],
       budgetItems: [],
       created_at: new Date().toISOString(),
     };
     
-    // Save to sheet
     await saveCampaignToSheet(newCampaign);
-    
     const updated = [...campaigns, newCampaign];
     setCampaigns(updated);
     setSelectedCampaign(newCampaign);
@@ -106,7 +104,7 @@ export default function App() {
   };
 
   const handleAddOwner = () => {
-    if (!selectedCampaign || !newOwnerName.trim()) return;
+    if (!selectedCampaign || !newOwnerName.trim() || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
       owners: [...selectedCampaign.owners, newOwnerName],
@@ -117,7 +115,7 @@ export default function App() {
   };
 
   const handleRemoveOwner = (index) => {
-    if (!selectedCampaign) return;
+    if (!selectedCampaign || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
       owners: selectedCampaign.owners.filter((_, i) => i !== index),
@@ -127,7 +125,7 @@ export default function App() {
   };
 
   const handleAddParticipant = () => {
-    if (!selectedCampaign || !newParticipantName.trim()) return;
+    if (!selectedCampaign || !newParticipantName.trim() || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
       participants: [...selectedCampaign.participants, newParticipantName],
@@ -138,7 +136,7 @@ export default function App() {
   };
 
   const handleRemoveParticipant = (index) => {
-    if (!selectedCampaign) return;
+    if (!selectedCampaign || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
       participants: selectedCampaign.participants.filter((_, i) => i !== index),
@@ -148,7 +146,7 @@ export default function App() {
   };
 
   const handleSaveNewItem = () => {
-    if (!selectedCampaign || !newItemForm.name.trim() || !newItemForm.startDate || !newItemForm.endDate) return;
+    if (!selectedCampaign || !newItemForm.name.trim() || !newItemForm.startDate || !newItemForm.endDate || !canEdit) return;
 
     const item = {
       id: `item_${Date.now()}`,
@@ -186,13 +184,14 @@ export default function App() {
   };
 
   const handleEditItem = (item) => {
+    if (!canEdit) return;
     setNewItemForm(item);
     setEditingItemId(item.id);
     setShowAddItemModal(true);
   };
 
   const handleDeleteItem = (itemId) => {
-    if (!selectedCampaign) return;
+    if (!selectedCampaign || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
       planningItems: selectedCampaign.planningItems.filter(i => i.id !== itemId),
@@ -202,7 +201,7 @@ export default function App() {
   };
 
   const handleAddBudgetItem = () => {
-    if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount) return;
+    if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount || !canEdit) return;
 
     const budgetItem = {
       id: `budget_${Date.now()}`,
@@ -223,7 +222,7 @@ export default function App() {
   };
 
   const handleDeleteBudgetItem = (budgetId) => {
-    if (!selectedCampaign) return;
+    if (!selectedCampaign || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
       budgetItems: selectedCampaign.budgetItems.filter(b => b.id !== budgetId),
@@ -232,20 +231,26 @@ export default function App() {
     setSelectedCampaign(updatedCampaign);
   };
 
+  if (!user) {
+    return <LoginModal onLoginSuccess={handleLoginSuccess} />;
+  }
+
   if (!selectedCampaign && campaigns.length === 0) {
     return (
       <div className="container">
         <div className="header">
           <h1>Crowdfunding Planning Tool</h1>
-          <div className="header-controls">
-            <button onClick={() => setShowConfigModal(true)} className="btn-small">⚙️ Config</button>
+          <div style={{ textAlign: "right" }}>
+            <button onClick={handleLogout} className="btn-small">Logout</button>
           </div>
         </div>
         <div style={{ textAlign: "center", padding: "40px" }}>
-          <p>No campaigns yet. Create one to get started!</p>
-          <button onClick={() => setShowNewCampaignForm(true)} className="btn-primary">
-            + New Campaign
-          </button>
+          <p>No campaigns yet.{canCreateCampaign ? " Create one to get started!" : " Wait for admin to create campaigns."}</p>
+          {canCreateCampaign && (
+            <button onClick={() => setShowNewCampaignForm(true)} className="btn-primary">
+              + New Campaign
+            </button>
+          )}
         </div>
 
         {showNewCampaignForm && (
@@ -266,10 +271,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {showConfigModal && (
-          <ConfigModal onConfig={handleConfigSheetUrl} />
-        )}
       </div>
     );
   }
@@ -279,7 +280,13 @@ export default function App() {
   return (
     <div className="container">
       <div className="header">
-        <h1>🚀 Crowdfunding Planning Tool</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h1>🚀 Crowdfunding Planning Tool</h1>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <span style={{ fontSize: "14px", color: "#666" }}>{user.name} ({user.is_admin ? "Admin" : "User"})</span>
+            <button onClick={handleLogout} className="btn-small">Logout</button>
+          </div>
+        </div>
         <div className="header-controls">
           <select
             value={selectedCampaign?.id || ""}
@@ -293,8 +300,12 @@ export default function App() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <button onClick={() => setShowNewCampaignForm(true)} className="btn-small">+ Campaign</button>
-          <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
+          {canCreateCampaign && (
+            <button onClick={() => setShowNewCampaignForm(true)} className="btn-small">+ Campaign</button>
+          )}
+          {canEdit && (
+            <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
+          )}
           <button onClick={handleSyncToSheet} className="btn-small">🔄 Sync</button>
           <span className="sync-status">{syncStatus}</span>
         </div>
@@ -305,7 +316,7 @@ export default function App() {
           📋 Plan
         </button>
         <button className={`tab ${activeTab === "calendar" ? "active" : ""}`} onClick={() => setActiveTab("calendar")}>
-          📅 Calendar & Gantt
+          📅 Calendar
         </button>
         <button className={`tab ${activeTab === "budget" ? "active" : ""}`} onClick={() => setActiveTab("budget")}>
           💰 Budget
@@ -314,13 +325,15 @@ export default function App() {
 
       {activeTab === "plan" && (
         <div className="tab-content">
-          <button onClick={() => {
-            setNewItemForm({ name: "", startDate: "", endDate: "", status: "not-started", owners: [], participants: [], reminderEnabled: false, reminderDays: 1 });
-            setEditingItemId(null);
-            setShowAddItemModal(true);
-          }} className="btn-primary">
-            + Add Planning Item
-          </button>
+          {canEdit && (
+            <button onClick={() => {
+              setNewItemForm({ name: "", startDate: "", endDate: "", status: "not-started", owners: [], participants: [], reminderEnabled: false, reminderDays: 1 });
+              setEditingItemId(null);
+              setShowAddItemModal(true);
+            }} className="btn-primary">
+              + Add Planning Item
+            </button>
+          )}
 
           <table className="items-table">
             <thead>
@@ -332,7 +345,7 @@ export default function App() {
                 <th>Owners</th>
                 <th>Participants</th>
                 <th>Reminder</th>
-                <th>Actions</th>
+                {canEdit && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -346,15 +359,17 @@ export default function App() {
                   <td>{item.participants.join(", ") || "-"}</td>
                   <td>
                     {item.reminderEnabled ? (
-                      <span className="badge reminder-enabled">🔔 {item.reminderDays}d before</span>
+                      <span className="badge reminder-enabled">🔔 {item.reminderDays}d</span>
                     ) : (
                       <span className="badge reminder-disabled">No reminder</span>
                     )}
                   </td>
-                  <td>
-                    <button onClick={() => handleEditItem(item)} className="btn-small">Edit</button>
-                    <button onClick={() => handleDeleteItem(item.id)} className="btn-small btn-danger">Delete</button>
-                  </td>
+                  {canEdit && (
+                    <td>
+                      <button onClick={() => handleEditItem(item)} className="btn-small">Edit</button>
+                      <button onClick={() => handleDeleteItem(item.id)} className="btn-small btn-danger">Delete</button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -364,30 +379,10 @@ export default function App() {
             <div className="modal-overlay" onClick={() => setShowAddItemModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
                 <h2>{editingItemId ? "Edit Planning Item" : "Add Planning Item"}</h2>
-                <input
-                  type="text"
-                  placeholder="Task name"
-                  value={newItemForm.name}
-                  onChange={e => setNewItemForm({...newItemForm, name: e.target.value})}
-                  className="input-field"
-                />
-                <input
-                  type="date"
-                  value={newItemForm.startDate}
-                  onChange={e => setNewItemForm({...newItemForm, startDate: e.target.value})}
-                  className="input-field"
-                />
-                <input
-                  type="date"
-                  value={newItemForm.endDate}
-                  onChange={e => setNewItemForm({...newItemForm, endDate: e.target.value})}
-                  className="input-field"
-                />
-                <select
-                  value={newItemForm.status}
-                  onChange={e => setNewItemForm({...newItemForm, status: e.target.value})}
-                  className="input-field"
-                >
+                <input type="text" placeholder="Task name" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} className="input-field" />
+                <input type="date" value={newItemForm.startDate} onChange={e => setNewItemForm({...newItemForm, startDate: e.target.value})} className="input-field" />
+                <input type="date" value={newItemForm.endDate} onChange={e => setNewItemForm({...newItemForm, endDate: e.target.value})} className="input-field" />
+                <select value={newItemForm.status} onChange={e => setNewItemForm({...newItemForm, status: e.target.value})} className="input-field">
                   <option value="not-started">Not Started</option>
                   <option value="in-progress">In Progress</option>
                   <option value="completed">Completed</option>
@@ -397,17 +392,7 @@ export default function App() {
                 <div className="checkbox-group">
                   {selectedCampaign.owners.map(owner => (
                     <label key={owner} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={newItemForm.owners.includes(owner)}
-                        onChange={e => {
-                          if (e.target.checked) {
-                            setNewItemForm({...newItemForm, owners: [...newItemForm.owners, owner]});
-                          } else {
-                            setNewItemForm({...newItemForm, owners: newItemForm.owners.filter(o => o !== owner)});
-                          }
-                        }}
-                      />
+                      <input type="checkbox" checked={newItemForm.owners.includes(owner)} onChange={e => { if (e.target.checked) { setNewItemForm({...newItemForm, owners: [...newItemForm.owners, owner]}); } else { setNewItemForm({...newItemForm, owners: newItemForm.owners.filter(o => o !== owner)}); } }} />
                       {owner}
                     </label>
                   ))}
@@ -417,28 +402,14 @@ export default function App() {
                 <div className="checkbox-group">
                   {selectedCampaign.participants.map(p => (
                     <label key={p} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={newItemForm.participants.includes(p)}
-                        onChange={e => {
-                          if (e.target.checked) {
-                            setNewItemForm({...newItemForm, participants: [...newItemForm.participants, p]});
-                          } else {
-                            setNewItemForm({...newItemForm, participants: newItemForm.participants.filter(x => x !== p)});
-                          }
-                        }}
-                      />
+                      <input type="checkbox" checked={newItemForm.participants.includes(p)} onChange={e => { if (e.target.checked) { setNewItemForm({...newItemForm, participants: [...newItemForm.participants, p]}); } else { setNewItemForm({...newItemForm, participants: newItemForm.participants.filter(x => x !== p)}); } }} />
                       {p}
                     </label>
                   ))}
                 </div>
 
                 <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={newItemForm.reminderEnabled}
-                    onChange={e => setNewItemForm({...newItemForm, reminderEnabled: e.target.checked})}
-                  />
+                  <input type="checkbox" checked={newItemForm.reminderEnabled} onChange={e => setNewItemForm({...newItemForm, reminderEnabled: e.target.checked})} />
                   Enable Reminder
                 </label>
 
@@ -446,13 +417,7 @@ export default function App() {
                   <div className="reminder-options">
                     {[1, 3, 5, 10].map(days => (
                       <label key={days} className="radio-label">
-                        <input
-                          type="radio"
-                          name="reminderDays"
-                          value={days}
-                          checked={newItemForm.reminderDays === days}
-                          onChange={e => setNewItemForm({...newItemForm, reminderDays: parseInt(e.target.value)})}
-                        />
+                        <input type="radio" name="reminderDays" value={days} checked={newItemForm.reminderDays === days} onChange={e => setNewItemForm({...newItemForm, reminderDays: parseInt(e.target.value)})} />
                         {days} days before
                       </label>
                     ))}
@@ -472,42 +437,40 @@ export default function App() {
       {activeTab === "calendar" && (
         <div className="tab-content">
           <h2>📅 Planning Timeline</h2>
-          <div className="gantt-container">
-            {selectedCampaign?.planningItems.length === 0 ? (
-              <p style={{ textAlign: "center", padding: "20px" }}>No planning items yet</p>
-            ) : (
-              <table className="gantt-table">
-                <thead>
-                  <tr>
-                    <th>Task</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Timeline</th>
+          {selectedCampaign?.planningItems.length === 0 ? (
+            <p style={{ textAlign: "center", padding: "20px" }}>No planning items yet</p>
+          ) : (
+            <table className="gantt-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th style={{ minWidth: "200px" }}>Timeline</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedCampaign.planningItems.map(item => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>{item.startDate}</td>
+                    <td>{item.endDate}</td>
+                    <td><div className={`gantt-bar status-${item.status}`}></div></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {selectedCampaign.planningItems.map(item => (
-                    <tr key={item.id}>
-                      <td>{item.name}</td>
-                      <td>{item.startDate}</td>
-                      <td>{item.endDate}</td>
-                      <td>
-                        <div className={`gantt-bar status-${item.status}`}></div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
       {activeTab === "budget" && (
         <div className="tab-content">
-          <button onClick={() => setShowAddBudgetModal(true)} className="btn-primary">
-            + Add Budget Item
-          </button>
+          {canEdit && (
+            <button onClick={() => setShowAddBudgetModal(true)} className="btn-primary">
+              + Add Budget Item
+            </button>
+          )}
 
           <div className="budget-summary">
             <h3>Total Budget: {selectedCampaign?.currency} {totalBudget.toFixed(2)}</h3>
@@ -519,7 +482,7 @@ export default function App() {
                 <th>Description</th>
                 <th>Category</th>
                 <th>Amount</th>
-                <th>Actions</th>
+                {canEdit && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -528,9 +491,11 @@ export default function App() {
                   <td>{item.description}</td>
                   <td>{item.category}</td>
                   <td>{selectedCampaign.currency} {item.amount.toFixed(2)}</td>
-                  <td>
-                    <button onClick={() => handleDeleteBudgetItem(item.id)} className="btn-small btn-danger">Delete</button>
-                  </td>
+                  {canEdit && (
+                    <td>
+                      <button onClick={() => handleDeleteBudgetItem(item.id)} className="btn-small btn-danger">Delete</button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -540,25 +505,9 @@ export default function App() {
             <div className="modal-overlay" onClick={() => setShowAddBudgetModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
                 <h2>Add Budget Item</h2>
-                <input
-                  type="text"
-                  placeholder="Description"
-                  value={newBudgetItem.description}
-                  onChange={e => setNewBudgetItem({...newBudgetItem, description: e.target.value})}
-                  className="input-field"
-                />
-                <input
-                  type="number"
-                  placeholder="Amount"
-                  value={newBudgetItem.amount}
-                  onChange={e => setNewBudgetItem({...newBudgetItem, amount: e.target.value})}
-                  className="input-field"
-                />
-                <select
-                  value={newBudgetItem.category}
-                  onChange={e => setNewBudgetItem({...newBudgetItem, category: e.target.value})}
-                  className="input-field"
-                >
+                <input type="text" placeholder="Description" value={newBudgetItem.description} onChange={e => setNewBudgetItem({...newBudgetItem, description: e.target.value})} className="input-field" />
+                <input type="number" placeholder="Amount" value={newBudgetItem.amount} onChange={e => setNewBudgetItem({...newBudgetItem, amount: e.target.value})} className="input-field" />
+                <select value={newBudgetItem.category} onChange={e => setNewBudgetItem({...newBudgetItem, category: e.target.value})} className="input-field">
                   <option value="marketing">Marketing</option>
                   <option value="development">Development</option>
                   <option value="operations">Operations</option>
@@ -583,18 +532,12 @@ export default function App() {
             <div className="settings-list">
               {selectedCampaign.owners.map((owner, idx) => (
                 <div key={idx} className="list-item">
-                  {owner}
+                  {owner} {owner === user.email && <span style={{ fontSize: "12px", color: "#999" }}>(you)</span>}
                   <button onClick={() => handleRemoveOwner(idx)} className="btn-small btn-danger">Remove</button>
                 </div>
               ))}
             </div>
-            <input
-              type="text"
-              placeholder="Add new owner"
-              value={newOwnerName}
-              onChange={e => setNewOwnerName(e.target.value)}
-              className="input-field"
-            />
+            <input type="text" placeholder="Add new owner" value={newOwnerName} onChange={e => setNewOwnerName(e.target.value)} className="input-field" />
             <button onClick={handleAddOwner} className="btn-primary">Add Owner</button>
 
             <h3 style={{ marginTop: "20px" }}>Participants</h3>
@@ -606,13 +549,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <input
-              type="text"
-              placeholder="Add new participant"
-              value={newParticipantName}
-              onChange={e => setNewParticipantName(e.target.value)}
-              className="input-field"
-            />
+            <input type="text" placeholder="Add new participant" value={newParticipantName} onChange={e => setNewParticipantName(e.target.value)} className="input-field" />
             <button onClick={handleAddParticipant} className="btn-primary">Add Participant</button>
 
             <div className="modal-buttons" style={{ marginTop: "20px" }}>
@@ -622,17 +559,11 @@ export default function App() {
         </div>
       )}
 
-      {showNewCampaignForm && (
+      {showNewCampaignForm && canCreateCampaign && (
         <div className="modal-overlay" onClick={() => setShowNewCampaignForm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Create New Campaign</h2>
-            <input
-              type="text"
-              placeholder="Campaign name"
-              value={newCampaignName}
-              onChange={e => setNewCampaignName(e.target.value)}
-              className="input-field"
-            />
+            <input type="text" placeholder="Campaign name" value={newCampaignName} onChange={e => setNewCampaignName(e.target.value)} className="input-field" />
             <div className="modal-buttons">
               <button onClick={handleCreateCampaign} className="btn-primary">Save</button>
               <button onClick={() => setShowNewCampaignForm(false)} className="btn-secondary">Cancel</button>
