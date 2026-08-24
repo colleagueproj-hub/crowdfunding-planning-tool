@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import "./styles.css";
 import ConfigModal from "./ConfigModal";
 import { extractSheetId, fetchCampaignsFromSheet, getStoredSheetUrl, storeSheetUrl, saveCampaignToSheet, getDefaultSheetId } from "./googleSheetsUtils";
@@ -39,12 +39,26 @@ export default function App() {
     loadCampaigns();
   }, []);
 
+  const normalizeCampaign = (campaign) => {
+    return {
+      id: campaign.id || `campaign_${Date.now()}`,
+      name: campaign.name || "Untitled Campaign",
+      currency: campaign.currency || "ILS",
+      owners: Array.isArray(campaign.owners) ? campaign.owners : [],
+      participants: Array.isArray(campaign.participants) ? campaign.participants : [],
+      planningItems: Array.isArray(campaign.planningItems) ? campaign.planningItems : [],
+      budgetItems: Array.isArray(campaign.budgetItems) ? campaign.budgetItems : [],
+      created_at: campaign.created_at || new Date().toISOString(),
+    };
+  };
+
   const loadCampaigns = async () => {
     const sheetId = getDefaultSheetId();
     const loaded = await fetchCampaignsFromSheet(sheetId);
-    setCampaigns(loaded);
-    if (loaded.length > 0 && !selectedCampaign) {
-      setSelectedCampaign(loaded[0]);
+    const normalized = loaded.map(normalizeCampaign);
+    setCampaigns(normalized);
+    if (normalized.length > 0 && !selectedCampaign) {
+      setSelectedCampaign(normalized[0]);
     }
   };
 
