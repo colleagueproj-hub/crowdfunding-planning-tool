@@ -42,9 +42,10 @@ export default function App() {
 
   const loadCampaigns = async () => {
     const loaded = await fetchCampaignsFromSheet(getDefaultSheetId());
-    setCampaigns(loaded);
-    if (loaded.length > 0 && !selectedCampaign) {
-      setSelectedCampaign(loaded[0]);
+    const normalized = (Array.isArray(loaded) ? loaded : []).map(normalizeCampaign);
+    setCampaigns(normalized);
+    if (normalized.length > 0 && !selectedCampaign) {
+      setSelectedCampaign(normalized[0]);
     }
   };
 
@@ -291,12 +292,12 @@ export default function App() {
           <select
             value={selectedCampaign?.id || ""}
             onChange={e => {
-              const campaign = campaigns.find(c => c.id === e.target.value);
+              const campaign = (campaigns || []).find(c => c.id === e.target.value);
               setSelectedCampaign(campaign);
             }}
             className="campaign-select"
           >
-            {campaigns.map(c => (
+            {(campaigns || []).map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
