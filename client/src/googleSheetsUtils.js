@@ -21,17 +21,25 @@ export async function fetchCampaignsFromSheet(sheetId = HARDCODED_SHEET_ID) {
     const result = await response.json();
     console.log("5. JSON parsed:", result);
     
-    if (!result.success || !result.campaigns) {
+    let campaigns = [];
+    
+    if (Array.isArray(result)) {
+      console.log("6. Result is an array, using directly");
+      campaigns = result;
+    } else if (result.success && Array.isArray(result.campaigns)) {
+      console.log("6. Result is object with campaigns array");
+      campaigns = result.campaigns;
+    } else {
       console.log("6. No campaigns in response");
       return [];
     }
     
-    console.log("7. Campaigns found:", result.campaigns.length);
+    console.log("7. Campaigns found:", campaigns.length);
     
-    localStorage.setItem("crowdfunding_campaigns_cache", JSON.stringify(result.campaigns));
+    localStorage.setItem("crowdfunding_campaigns_cache", JSON.stringify(campaigns));
     localStorage.setItem("crowdfunding_last_sync", new Date().toISOString());
     
-    return result.campaigns;
+    return campaigns;
   } catch (error) {
     console.error("ERROR in fetch:", error);
     console.error("Error stack:", error.stack);
@@ -56,7 +64,7 @@ export async function saveCampaignToSheet(campaign) {
     console.log("Save response status:", response.status);
     const result = await response.json();
     console.log("Save result:", result);
-    return result.success;
+    return result.success !== false;
   } catch (error) {
     console.error("Error saving:", error);
     return false;
