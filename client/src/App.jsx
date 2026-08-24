@@ -296,14 +296,17 @@ export default function App() {
   return (
     <div className="container">
       <div className="header">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" style={{ width: "40px", height: "40px", borderRadius: "6px" }} onError={(e) => { e.target.style.display = 'none'; }} />
-            <h1>🌿 Weeping Willow Tree</h1>
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#b8956a" }}>{user.name} ({user.is_admin ? "Admin" : "User"})</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "15px", flex: 1 }}>
+            <span style={{ fontSize: "14px", color: "#d4af37" }}>{user.name} ({user.is_admin ? "Admin" : "User"})</span>
             <button onClick={handleLogout} className="btn-small">Logout</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "15px", flex: 1, justifyContent: "center" }}>
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" style={{ width: "70px", height: "70px", borderRadius: "6px" }} onError={(e) => { e.target.style.display = 'none'; }} />
+            <h1 style={{ marginBottom: "0" }}>🌿 Weeping Willow Tree</h1>
+          </div>
+          <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+            <span className="sync-status">{syncStatus}</span>
           </div>
         </div>
         <div className="header-controls">
@@ -329,7 +332,6 @@ export default function App() {
             <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
           )}
           <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
-          <span className="sync-status">{syncStatus}</span>
         </div>
       </div>
 

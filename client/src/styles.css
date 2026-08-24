@@ -13,7 +13,7 @@ body {
 }
 
 .container {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -24,7 +24,7 @@ body {
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
   margin-bottom: 20px;
-  border: 1px solid #404040;
+  border: 2px solid #ffffff;
 }
 
 .header h1 {
@@ -38,11 +38,11 @@ body {
 }
 
 .header-logo {
-  width: 40px;
-  height: 40px;
+  width: 70px;
+  height: 70px;
   border-radius: 6px;
   object-fit: cover;
-  border: 1px solid #404040;
+  border: 2px solid #ffffff;
 }
 
 .header-controls {
@@ -127,7 +127,7 @@ body {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  border: 1px solid #404040;
+  border: 2px solid #ffffff;
 }
 
 .tab {
@@ -156,7 +156,7 @@ body {
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  border: 1px solid #404040;
+  border: 2px solid #ffffff;
 }
 
 .items-table {
@@ -241,7 +241,7 @@ body {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid #404040;
+  border: 2px solid #ffffff;
 }
 
 .modal h2 {
@@ -349,7 +349,7 @@ body {
   padding: 20px;
   border-radius: 6px;
   margin-bottom: 20px;
-  border: 1px solid #404040;
+  border: 2px solid #ffffff;
 }
 
 .budget-summary h3 {
