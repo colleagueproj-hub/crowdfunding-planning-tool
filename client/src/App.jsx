@@ -84,13 +84,19 @@ export default function App() {
     setSelectedCampaign(null);
   };
 
-  const handleSyncToSheet = async () => {
-    if (!selectedCampaign) return;
-    setSyncStatus("⏳ Syncing...");
-    const success = await saveCampaignToSheet(selectedCampaign);
-    setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed");
-    setTimeout(() => setSyncStatus("✓ Synced"), 3000);
-  };
+  useEffect(() => {
+    if (selectedCampaign) {
+      // Auto-sync when campaign changes
+      const syncTimer = setTimeout(async () => {
+        setSyncStatus("⏳ Auto-syncing...");
+        const success = await saveCampaignToSheet(selectedCampaign);
+        setSyncStatus(success ? "✓ Auto-synced" : "⚠️ Sync failed");
+        setTimeout(() => setSyncStatus("✓ Synced"), 2000);
+      }, 1000); // Sync 1 second after changes stop
+      
+      return () => clearTimeout(syncTimer);
+    }
+  }, [selectedCampaign]);
 
   const handleCreateCampaign = async () => {
     if (!newCampaignName.trim()) return;
@@ -319,7 +325,7 @@ export default function App() {
           {canEdit && (
             <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
           )}
-          <button onClick={handleSyncToSheet} className="btn-small">🔄 Sync</button>
+          <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
           <span className="sync-status">{syncStatus}</span>
         </div>
       </div>
