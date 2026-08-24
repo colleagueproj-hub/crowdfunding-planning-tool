@@ -1,5 +1,5 @@
 const HARDCODED_SHEET_ID = "19Qir2g-4lZBJWuMvWudybqkIemqZxkeghEFfZsjJpfE";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwu6XL4wR-Z1MdSTRgOCyfv829ja5rl7UYYrT20DZvlsuAdrlBgmykPk8wQDuG0HecjPQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwM3vkIsjFkoEFa9kp3VXXWDK4d8tcDOh_LParXcya83nEMCOHgWh3Ip3n5_jp1sPVA9g/exec";
 
 export async function fetchCampaignsFromSheet(sheetId = HARDCODED_SHEET_ID) {
   try {
