@@ -65,17 +65,21 @@ export default function App() {
   // Auto-save selected campaign when it changes
   useEffect(() => {
     if (selectedCampaign) {
-      saveCampaignToSheet(selectedCampaign);
-      setSyncStatus("✓ Saved");
-      setTimeout(() => setSyncStatus("✓ Synced"), 2000);
+      // Store locally only - don't auto-save to sheet (CORS issue)
+      setSyncStatus("⚠️ Local changes (click Sync)");
     }
   }, [selectedCampaign]);
 
-  const handleConfigSheetUrl = (url) => {
-    storeSheetUrl(url);
-    setSheetUrl(url);
-    setShowConfigModal(false);
-    loadCampaigns();
+  const handleSyncToSheet = async () => {
+    if (!selectedCampaign) return;
+    setSyncStatus("⏳ Syncing...");
+    const success = await saveCampaignToSheet(selectedCampaign);
+    if (success) {
+      setSyncStatus("✓ Synced!");
+      setTimeout(() => setSyncStatus("⚠️ Local changes"), 3000);
+    } else {
+      setSyncStatus("❌ Sync failed (offline?)");
+    }
   };
 
   const handleCreateCampaign = async () => {
@@ -291,6 +295,7 @@ export default function App() {
           </select>
           <button onClick={() => setShowNewCampaignForm(true)} className="btn-small">+ Campaign</button>
           <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
+          <button onClick={handleSyncToSheet} className="btn-small">🔄 Sync</button>
           <span className="sync-status">{syncStatus}</span>
         </div>
       </div>
