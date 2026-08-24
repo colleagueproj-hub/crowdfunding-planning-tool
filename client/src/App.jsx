@@ -297,9 +297,12 @@ export default function App() {
     <div className="container">
       <div className="header">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h1>🚀 Crowdfunding Planning Tool</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+            <img src="/logo.png" alt="Logo" style={{ width: "40px", height: "40px", borderRadius: "6px" }} />
+            <h1>🌿 Weeping Willow Tree</h1>
+          </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", color: "#666" }}>{user.name} ({user.is_admin ? "Admin" : "User"})</span>
+            <span style={{ fontSize: "14px", color: "#b8956a" }}>{user.name} ({user.is_admin ? "Admin" : "User"})</span>
             <button onClick={handleLogout} className="btn-small">Logout</button>
           </div>
         </div>
@@ -455,30 +458,54 @@ export default function App() {
 
       {activeTab === "calendar" && (
         <div className="tab-content">
-          <h2>📅 Planning Timeline</h2>
+          <h2>📅 Project Timeline</h2>
           {selectedCampaign?.planningItems.length === 0 ? (
-            <p style={{ textAlign: "center", padding: "20px" }}>No planning items yet</p>
+            <p style={{ textAlign: "center", padding: "20px", color: "#b8956a" }}>No planning items yet</p>
           ) : (
-            <table className="gantt-table">
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th style={{ minWidth: "200px" }}>Timeline</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedCampaign.planningItems.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>{item.startDate}</td>
-                    <td>{item.endDate}</td>
-                    <td><div className={`gantt-bar status-${item.status}`}></div></td>
+            <div className="gantt-container">
+              <table className="gantt-table">
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: "150px" }}>Task</th>
+                    <th style={{ minWidth: "100px" }}>Start Date</th>
+                    <th style={{ minWidth: "100px" }}>End Date</th>
+                    <th style={{ minWidth: "150px" }}>Status</th>
+                    <th style={{ minWidth: "300px" }}>Timeline</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {selectedCampaign.planningItems.map((item, idx) => {
+                    const startDate = new Date(item.startDate);
+                    const endDate = new Date(item.endDate);
+                    const daysSpan = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+                    
+                    return (
+                      <tr key={item.id}>
+                        <td style={{ fontWeight: "500" }}>{item.name}</td>
+                        <td>{item.startDate}</td>
+                        <td>{item.endDate}</td>
+                        <td><span className={`badge status-${item.status}`}>{item.status}</span></td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                            <div style={{ flex: 1, height: "30px", background: "#5a5a5a", borderRadius: "6px", overflow: "hidden", position: "relative" }}>
+                              <div
+                                className={`gantt-bar status-${item.status}`}
+                                style={{
+                                  width: Math.min(100, Math.max(5, (daysSpan / 100) * 100)) + "%",
+                                  height: "100%",
+                                  minWidth: "30px"
+                                }}
+                              ></div>
+                            </div>
+                            <span style={{ fontSize: "12px", color: "#b8956a", minWidth: "50px" }}>{daysSpan}d</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
