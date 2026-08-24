@@ -407,8 +407,14 @@ export default function App() {
               <div className="modal" onClick={e => e.stopPropagation()}>
                 <h2>{editingItemId ? "Edit Planning Item" : "Add Planning Item"}</h2>
                 <input type="text" placeholder="Task name" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} className="input-field" />
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>📅 Start Date</label>
                 <input type="date" value={newItemForm.startDate} onChange={e => setNewItemForm({...newItemForm, startDate: e.target.value})} className="input-field" />
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>📅 End Date</label>
                 <input type="date" value={newItemForm.endDate} onChange={e => setNewItemForm({...newItemForm, endDate: e.target.value})} className="input-field" />
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Status</label>
                 <select value={newItemForm.status} onChange={e => setNewItemForm({...newItemForm, status: e.target.value})} className="input-field">
                   <option value="not-started">Not Started</option>
                   <option value="in-progress">In Progress</option>
