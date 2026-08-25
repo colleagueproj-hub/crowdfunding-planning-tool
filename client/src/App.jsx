@@ -485,19 +485,22 @@ export default function App() {
                         const date = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1);
                         // Format as YYYY-MM-DD in local timezone (no UTC conversion)
                         const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        const today = new Date();
+                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                         const isSelected = newItemForm.startDate === dateStr;
+                        const isToday = dateStr === todayStr;
                         return (
                           <button
                             key={i}
                             onClick={() => { setNewItemForm({...newItemForm, startDate: dateStr}); setShowStartDatePicker(false); }}
                             style={{
                               padding: "8px",
-                              background: isSelected ? "#d4af37" : "#3a3a3a",
+                              background: isSelected ? "#d4af37" : isToday ? "#5a6a7a" : "#3a3a3a",
                               color: isSelected ? "#1a1a1a" : "#ffffff",
-                              border: "1px solid #505050",
+                              border: isToday ? "2px solid #d4af37" : "1px solid #505050",
                               borderRadius: "4px",
                               cursor: "pointer",
-                              fontWeight: isSelected ? "600" : "400"
+                              fontWeight: isSelected || isToday ? "600" : "400"
                             }}
                           >
                             {i + 1}
@@ -538,19 +541,22 @@ export default function App() {
                         const date = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1);
                         // Format as YYYY-MM-DD in local timezone (no UTC conversion)
                         const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        const today = new Date();
+                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                         const isSelected = newItemForm.endDate === dateStr;
+                        const isToday = dateStr === todayStr;
                         return (
                           <button
                             key={i}
                             onClick={() => { setNewItemForm({...newItemForm, endDate: dateStr}); setShowEndDatePicker(false); }}
                             style={{
                               padding: "8px",
-                              background: isSelected ? "#d4af37" : "#3a3a3a",
+                              background: isSelected ? "#d4af37" : isToday ? "#5a6a7a" : "#3a3a3a",
                               color: isSelected ? "#1a1a1a" : "#ffffff",
-                              border: "1px solid #505050",
+                              border: isToday ? "2px solid #d4af37" : "1px solid #505050",
                               borderRadius: "4px",
                               cursor: "pointer",
-                              fontWeight: isSelected ? "600" : "400"
+                              fontWeight: isSelected || isToday ? "600" : "400"
                             }}
                           >
                             {i + 1}
