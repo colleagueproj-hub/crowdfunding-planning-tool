@@ -603,12 +603,34 @@ export default function App() {
 
                 {newItemForm.reminderEnabled && (
                   <div className="reminder-options">
-                    {[1, 3, 5, 10].map(days => (
-                      <label key={days} className="radio-label">
-                        <input type="radio" name="reminderDays" value={days} checked={newItemForm.reminderDays === days} onChange={e => setNewItemForm({...newItemForm, reminderDays: parseInt(e.target.value)})} />
-                        {days} days before
-                      </label>
-                    ))}
+                    {[1, 3, 5, 10].map(days => {
+                      // Calculate reminder date
+                      const startDate = new Date(newItemForm.startDate);
+                      const reminderDate = new Date(startDate);
+                      reminderDate.setDate(reminderDate.getDate() - days);
+                      
+                      // Get today's date
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      reminderDate.setHours(0, 0, 0, 0);
+                      
+                      // Disable if reminder date is today or before
+                      const isDisabled = reminderDate <= today;
+                      
+                      return (
+                        <label key={days} className="radio-label" style={{ opacity: isDisabled ? 0.5 : 1, cursor: isDisabled ? "not-allowed" : "pointer" }}>
+                          <input 
+                            type="radio" 
+                            name="reminderDays" 
+                            value={days} 
+                            checked={newItemForm.reminderDays === days} 
+                            onChange={e => setNewItemForm({...newItemForm, reminderDays: parseInt(e.target.value)})}
+                            disabled={isDisabled}
+                          />
+                          {days} days before {isDisabled && <span style={{ fontSize: "12px", color: "#999" }}>(too late)</span>}
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
 
