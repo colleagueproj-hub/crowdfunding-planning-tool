@@ -756,68 +756,109 @@ export default function App() {
               <div>
                 <h3 style={{ marginBottom: "15px", color: "#ffffff" }}>📊 Gantt Chart Timeline</h3>
                 <div style={{ overflowX: "auto", paddingBottom: "20px" }}>
-                  <div style={{ minWidth: "800px" }}>
-                    {/* Timeline Header */}
-                    <div style={{ display: "flex", marginBottom: "20px", fontSize: "12px", color: "#ffffff", paddingLeft: "200px" }}>
-                      {Array.from({ length: 25 }).map((_, i) => {
-                        const dateObj = new Date();
-                        dateObj.setDate(dateObj.getDate() + i);
-                        const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  {selectedCampaign.planningItems.length === 0 ? (
+                    <div style={{ color: "#d4af37", textAlign: "center", padding: "20px" }}>No planning items to display</div>
+                  ) : (
+                    <div>
+                      {(() => {
+                        // Calculate the date range from all planning items
+                        const dates = selectedCampaign.planningItems.flatMap(item => [
+                          new Date(item.startDate),
+                          new Date(item.endDate)
+                        ]);
+                        const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+                        const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+                        
+                        // Add padding: start 5 days before earliest, end 5 days after latest
+                        minDate.setDate(minDate.getDate() - 5);
+                        maxDate.setDate(maxDate.getDate() + 5);
+                        
+                        // Calculate total days to display
+                        const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
+
                         return (
-                          <div key={i} style={{ flex: 1, textAlign: "center", borderRight: "1px solid #505050", paddingRight: "5px" }}>
-                            {dateStr}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Gantt Bars */}
-                    {selectedCampaign.planningItems.map((item) => {
-                      const startDate = new Date(item.startDate);
-                      const endDate = new Date(item.endDate);
-                      const today = new Date();
-                      const daysFromToday = Math.max(0, Math.floor((startDate - today) / (1000 * 60 * 60 * 24)));
-                      const durationDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
-                      const barStart = Math.max(0, daysFromToday);
-                      const barWidth = Math.min(24 - barStart, durationDays);
-
-                      return (
-                        <div key={item.id} style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}>
-                          <div style={{ width: "200px", color: "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {item.name}
-                          </div>
-                          <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center" }}>
-                            {/* Background grid */}
-                            {Array.from({ length: 25 }).map((_, i) => (
-                              <div key={i} style={{ flex: 1, borderRight: "1px solid #505050", height: "100%" }} />
-                            ))}
-                            
-                            {/* Bar */}
-                            <div
-                              style={{
-                                position: "absolute",
-                                left: `${(barStart / 25) * 100}%`,
-                                width: `${(barWidth / 25) * 100}%`,
-                                height: "30px",
-                                background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? "#d4af37" : "#6a6a6a",
-                                borderRadius: "4px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
-                                fontSize: "11px",
-                                fontWeight: "600",
-                                border: "1px solid #707070",
-                                minWidth: "40px"
-                              }}
-                            >
-                              {durationDays}d
+                          <>
+                            {/* Timeline Header */}
+                            <div style={{ display: "flex", marginBottom: "20px", fontSize: "11px", color: "#ffffff", paddingLeft: "200px" }}>
+                              {Array.from({ length: totalDays }).map((_, i) => {
+                                const dateObj = new Date(minDate);
+                                dateObj.setDate(dateObj.getDate() + i);
+                                const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                const isFirstOfMonth = dateObj.getDate() === 1;
+                                return (
+                                  <div 
+                                    key={i} 
+                                    style={{ 
+                                      flex: 1, 
+                                      textAlign: "center", 
+                                      borderRight: "1px solid #505050", 
+                                      paddingRight: "5px",
+                                      background: isFirstOfMonth ? "#3a4a3a" : "transparent",
+                                      padding: "4px 0"
+                                    }}
+                                  >
+                                    {dateStr}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+
+                            {/* Gantt Bars */}
+                            {selectedCampaign.planningItems.map((item) => {
+                              const startDate = new Date(item.startDate);
+                              const endDate = new Date(item.endDate);
+                              
+                              // Calculate position and width relative to the displayed timeline
+                              const daysFromStart = Math.floor((startDate - minDate) / (1000 * 60 * 60 * 24));
+                              const durationDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+                              
+                              const barStartPercent = (daysFromStart / totalDays) * 100;
+                              const barWidthPercent = (durationDays / totalDays) * 100;
+
+                              return (
+                                <div key={item.id} style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}>
+                                  <div style={{ width: "200px", color: "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px" }}>
+                                    {item.name}
+                                  </div>
+                                  <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center" }}>
+                                    {/* Background grid */}
+                                    {Array.from({ length: totalDays }).map((_, i) => (
+                                      <div key={i} style={{ flex: 1, borderRight: "1px solid #505050", height: "100%" }} />
+                                    ))}
+                                    
+                                    {/* Bar */}
+                                    {barStartPercent < 100 && (
+                                      <div
+                                        style={{
+                                          position: "absolute",
+                                          left: `${barStartPercent}%`,
+                                          width: `${barWidthPercent}%`,
+                                          height: "30px",
+                                          background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? "#d4af37" : "#6a6a6a",
+                                          borderRadius: "4px",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
+                                          fontSize: "11px",
+                                          fontWeight: "600",
+                                          border: "1px solid #707070",
+                                          minWidth: "40px",
+                                          overflow: "hidden"
+                                        }}
+                                      >
+                                        {durationDays}d
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Legend */}
