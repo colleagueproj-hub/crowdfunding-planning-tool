@@ -882,6 +882,7 @@ export default function App() {
                   <option value="recordings">Recordings</option>
                   <option value="visual">Visual</option>
                   <option value="live">Live</option>
+                  <option value="merchandise">Merchandise</option>
                   <option value="other">Other</option>
                 </select>
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
