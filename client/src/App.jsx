@@ -945,7 +945,7 @@ export default function App() {
                 <th>Gift Name</th>
                 <th>Price</th>
                 <th>Cost</th>
-                <th>Quantity</th>
+                <th>Suggested Quantity</th>
                 <th>Owners</th>
                 <th>Comment</th>
                 {canEdit && <th>Actions</th>}
