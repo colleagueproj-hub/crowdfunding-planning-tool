@@ -136,6 +136,10 @@ export default function App() {
     const updatedCampaign = {
       ...selectedCampaign,
       owners: [...selectedCampaign.owners, newOwnerName],
+      // Automatically add to participants if not already there
+      participants: selectedCampaign.participants.includes(newOwnerName) 
+        ? selectedCampaign.participants 
+        : [...selectedCampaign.participants, newOwnerName],
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
