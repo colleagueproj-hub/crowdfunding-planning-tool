@@ -36,6 +36,14 @@ export default function App() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [pickerMonth, setPickerMonth] = useState(new Date());
+  const [newGiftItem, setNewGiftItem] = useState({
+    name: "",
+    price: "",
+    cost: "",
+    owners: [],
+  });
+  const [showAddGiftModal, setShowAddGiftModal] = useState(false);
+  const [editingGiftId, setEditingGiftId] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -60,6 +68,7 @@ export default function App() {
     participants: Array.isArray(campaign.participants) ? campaign.participants : [],
     planningItems: Array.isArray(campaign.planningItems) ? campaign.planningItems : [],
     budgetItems: Array.isArray(campaign.budgetItems) ? campaign.budgetItems : [],
+    gifts: Array.isArray(campaign.gifts) ? campaign.gifts : [],
     created_at: campaign.created_at || new Date().toISOString(),
   });
 
@@ -276,6 +285,44 @@ export default function App() {
     setSelectedCampaign(updatedCampaign);
   };
 
+  const handleAddGift = () => {
+    if (!selectedCampaign || !newGiftItem.name.trim() || !newGiftItem.price || !newGiftItem.cost || newGiftItem.owners.length === 0 || !canEdit) {
+      alert("Please fill in all fields and select at least 1 owner");
+      return;
+    }
+
+    const gift = {
+      id: `gift_${Date.now()}`,
+      name: newGiftItem.name,
+      price: parseFloat(newGiftItem.price),
+      cost: parseFloat(newGiftItem.cost),
+      owners: newGiftItem.owners,
+    };
+
+    const updatedCampaign = {
+      ...selectedCampaign,
+      gifts: editingGiftId
+        ? selectedCampaign.gifts.map(g => g.id === editingGiftId ? gift : g)
+        : [...selectedCampaign.gifts, gift],
+    };
+
+    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    setSelectedCampaign(updatedCampaign);
+    setNewGiftItem({ name: "", price: "", cost: "", owners: [] });
+    setEditingGiftId(null);
+    setShowAddGiftModal(false);
+  };
+
+  const handleDeleteGift = (giftId) => {
+    if (!selectedCampaign || !canEdit) return;
+    const updatedCampaign = {
+      ...selectedCampaign,
+      gifts: selectedCampaign.gifts.filter(g => g.id !== giftId),
+    };
+    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    setSelectedCampaign(updatedCampaign);
+  };
+
   if (!user) {
     return <LoginModal onLoginSuccess={handleLoginSuccess} />;
   }
@@ -380,6 +427,9 @@ export default function App() {
         </button>
         <button className={`tab ${activeTab === "budget" ? "active" : ""}`} onClick={() => setActiveTab("budget")}>
           💰 Budget
+        </button>
+        <button className={`tab ${activeTab === "gifts" ? "active" : ""}`} onClick={() => setActiveTab("gifts")}>
+          🎁 Gifts
         </button>
       </div>
 
@@ -828,6 +878,89 @@ export default function App() {
                 <div className="modal-buttons">
                   <button onClick={handleAddBudgetItem} className="btn-primary">Save</button>
                   <button onClick={() => setShowAddBudgetModal(false)} className="btn-secondary">Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "gifts" && (
+        <div className="tab-content">
+          {canEdit && (
+            <>
+              {selectedCampaign?.participants.length === 0 ? (
+                <div style={{ background: "#4a4a4a", padding: "15px", borderRadius: "6px", marginBottom: "20px", border: "2px solid #d4af37" }}>
+                  <p style={{ color: "#d4af37", fontWeight: "600", marginBottom: "10px" }}>⚠️ Before adding gifts, please:</p>
+                  <ul style={{ color: "#ffffff", marginLeft: "20px", marginBottom: "10px" }}>
+                    <li>Add at least 1 participant in Campaign Settings</li>
+                  </ul>
+                  <button onClick={() => setShowCampaignSettings(true)} className="btn-primary">
+                    ⚙️ Go to Campaign Settings
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => { setNewGiftItem({ name: "", price: "", cost: "", owners: [] }); setEditingGiftId(null); setShowAddGiftModal(true); }} className="btn-primary">
+                  + Add Gift
+                </button>
+              )}
+            </>
+          )}
+
+          <table className="items-table">
+            <thead>
+              <tr>
+                <th>Gift Name</th>
+                <th>Price</th>
+                <th>Cost</th>
+                <th>Owners</th>
+                {canEdit && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {selectedCampaign?.gifts && selectedCampaign.gifts.length > 0 ? (
+                selectedCampaign.gifts.map(gift => (
+                  <tr key={gift.id}>
+                    <td>{gift.name}</td>
+                    <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
+                    <td>{selectedCampaign.currency} {gift.cost.toFixed(2)}</td>
+                    <td>{gift.owners.join(", ")}</td>
+                    {canEdit && (
+                      <td>
+                        <button onClick={() => handleDeleteGift(gift.id)} className="btn-small btn-danger">Delete</button>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={canEdit ? 5 : 4} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {showAddGiftModal && selectedCampaign && (
+            <div className="modal-overlay" onClick={() => setShowAddGiftModal(false)}>
+              <div className="modal" onClick={e => e.stopPropagation()}>
+                <h2>Add Gift</h2>
+                <input type="text" placeholder="Gift name" value={newGiftItem.name} onChange={e => setNewGiftItem({...newGiftItem, name: e.target.value})} className="input-field" />
+                <input type="number" placeholder="Price" value={newGiftItem.price} onChange={e => setNewGiftItem({...newGiftItem, price: e.target.value})} className="input-field" />
+                <input type="number" placeholder="Cost" value={newGiftItem.cost} onChange={e => setNewGiftItem({...newGiftItem, cost: e.target.value})} className="input-field" />
+
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Gift Owner(s):</label>
+                <div className="checkbox-group">
+                  {selectedCampaign.participants.map(p => (
+                    <label key={p} className="checkbox-label">
+                      <input type="checkbox" checked={newGiftItem.owners.includes(p)} onChange={e => { if (e.target.checked) { setNewGiftItem({...newGiftItem, owners: [...newGiftItem.owners, p]}); } else { setNewGiftItem({...newGiftItem, owners: newGiftItem.owners.filter(x => x !== p)}); } }} />
+                      {p}
+                    </label>
+                  ))}
+                </div>
+
+                <div className="modal-buttons">
+                  <button onClick={handleAddGift} className="btn-primary">Save</button>
+                  <button onClick={() => setShowAddGiftModal(false)} className="btn-secondary">Cancel</button>
                 </div>
               </div>
             </div>
