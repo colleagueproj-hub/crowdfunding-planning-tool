@@ -386,13 +386,28 @@ export default function App() {
       {activeTab === "plan" && (
         <div className="tab-content">
           {canEdit && (
-            <button onClick={() => {
-              setNewItemForm({ name: "", startDate: "", endDate: "", status: "not-started", owners: [], participants: [], reminderEnabled: false, reminderDays: 1 });
-              setEditingItemId(null);
-              setShowAddItemModal(true);
-            }} className="btn-primary">
-              + Add Planning Item
-            </button>
+            <>
+              {selectedCampaign?.owners.length === 0 || selectedCampaign?.participants.length === 0 ? (
+                <div style={{ background: "#4a4a4a", padding: "15px", borderRadius: "6px", marginBottom: "20px", border: "2px solid #d4af37" }}>
+                  <p style={{ color: "#d4af37", fontWeight: "600", marginBottom: "10px" }}>⚠️ Before adding planning items, please:</p>
+                  <ul style={{ color: "#ffffff", marginLeft: "20px", marginBottom: "10px" }}>
+                    {selectedCampaign?.owners.length === 0 && <li>Add at least 1 owner in Campaign Settings</li>}
+                    {selectedCampaign?.participants.length === 0 && <li>Add at least 1 participant in Campaign Settings</li>}
+                  </ul>
+                  <button onClick={() => setShowCampaignSettings(true)} className="btn-primary">
+                    ⚙️ Go to Campaign Settings
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => {
+                  setNewItemForm({ name: "", startDate: "", endDate: "", status: "not-started", owners: [], participants: [], reminderEnabled: false, reminderDays: 1 });
+                  setEditingItemId(null);
+                  setShowAddItemModal(true);
+                }} className="btn-primary">
+                  + Add Planning Item
+                </button>
+              )}
+            </>
           )}
 
           <table className="items-table">
@@ -718,9 +733,24 @@ export default function App() {
       {activeTab === "budget" && (
         <div className="tab-content">
           {canEdit && (
-            <button onClick={() => setShowAddBudgetModal(true)} className="btn-primary">
-              + Add Budget Item
-            </button>
+            <>
+              {selectedCampaign?.owners.length === 0 || selectedCampaign?.participants.length === 0 ? (
+                <div style={{ background: "#4a4a4a", padding: "15px", borderRadius: "6px", marginBottom: "20px", border: "2px solid #d4af37" }}>
+                  <p style={{ color: "#d4af37", fontWeight: "600", marginBottom: "10px" }}>⚠️ Before adding budget items, please:</p>
+                  <ul style={{ color: "#ffffff", marginLeft: "20px", marginBottom: "10px" }}>
+                    {selectedCampaign?.owners.length === 0 && <li>Add at least 1 owner in Campaign Settings</li>}
+                    {selectedCampaign?.participants.length === 0 && <li>Add at least 1 participant in Campaign Settings</li>}
+                  </ul>
+                  <button onClick={() => setShowCampaignSettings(true)} className="btn-primary">
+                    ⚙️ Go to Campaign Settings
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setShowAddBudgetModal(true)} className="btn-primary">
+                  + Add Budget Item
+                </button>
+              )}
+            </>
           )}
 
           <div className="budget-summary">
