@@ -66,3 +66,36 @@ export async function saveCampaignToSheet(campaign) {
 export function getDefaultSheetId() {
   return HARDCODED_SHEET_ID;
 }
+
+export async function fetchNotifications(userEmail) {
+  try {
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "read_notifications");
+    
+    const response = await fetch(url.toString(), { method: "GET" });
+    if (!response.ok) throw new Error("Failed to fetch notifications");
+    const allNotifications = await response.json();
+    
+    // Filter for current user's notifications
+    const userNotifications = allNotifications.filter(n => n.email === userEmail && !n.dismissed);
+    return userNotifications;
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return [];
+  }
+}
+
+export async function dismissNotification(notifId) {
+  try {
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "dismiss_notification");
+    url.searchParams.append("notifId", notifId);
+    
+    const response = await fetch(url.toString(), { method: "GET" });
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    console.error("Error dismissing notification:", error);
+    return false;
+  }
+}

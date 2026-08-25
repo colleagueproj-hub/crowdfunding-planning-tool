@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./styles.css";
 import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
-import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId } from "./googleSheetsUtils";
+import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification } from "./googleSheetsUtils";
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -47,12 +47,24 @@ export default function App() {
   });
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [editingGiftId, setEditingGiftId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     if (user) {
       loadCampaigns();
+      loadNotifications();
+      // Refresh notifications every 30 seconds
+      const notifInterval = setInterval(() => loadNotifications(), 30000);
+      return () => clearInterval(notifInterval);
     }
   }, [user]);
+
+  const loadNotifications = async () => {
+    if (user && user.email) {
+      const notifs = await fetchNotifications(user.email);
+      setNotifications(notifs);
+    }
+  };
 
   const loadCampaigns = async () => {
     const loaded = await fetchCampaignsFromSheet(getDefaultSheetId());
@@ -450,6 +462,56 @@ export default function App() {
           <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
         </div>
       </div>
+
+      {/* Notifications Banner */}
+      {notifications.length > 0 && (
+        <div style={{ marginBottom: "20px" }}>
+          {notifications.map(notif => (
+            <div
+              key={notif.id}
+              style={{
+                background: "#3a5a3a",
+                border: "2px solid #d4af37",
+                borderRadius: "8px",
+                padding: "15px",
+                marginBottom: "10px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                color: "#ffffff"
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: "0 0 5px 0", fontWeight: "600", color: "#d4af37", fontSize: "14px" }}>
+                  📧 {notif.message}
+                </p>
+                <p style={{ margin: "5px 0", fontSize: "13px", color: "#e0e0e0" }}>
+                  Campaign: <strong>{notif.campaignName}</strong> • Starts: {notif.startDate}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  dismissNotification(notif.id);
+                  setNotifications(notifications.filter(n => n.id !== notif.id));
+                }}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #d4af37",
+                  color: "#d4af37",
+                  padding: "8px 12px",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  marginLeft: "15px",
+                  fontSize: "12px",
+                  fontWeight: "600"
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="tabs">
         <button className={`tab ${activeTab === "plan" ? "active" : ""}`} onClick={() => setActiveTab("plan")}>
