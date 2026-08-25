@@ -258,7 +258,11 @@ export default function App() {
     return (
       <div className="container">
         <div className="header">
-          <h1>Crowdfunding Planning Tool</h1>
+          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Weeping Willow Tree" style={{ width: "120px", height: "120px", borderRadius: "8px", marginBottom: "15px" }} onError={(e) => { e.target.style.display = 'none'; }} />
+            <h1 style={{ marginBottom: "5px", color: "#d4af37" }}>Weeping Willow Tree</h1>
+            <p style={{ marginBottom: "15px", fontSize: "14px", color: "#d4af37" }}>Crowd sourcing campaign</p>
+          </div>
           <div style={{ textAlign: "right" }}>
             <button onClick={handleLogout} className="btn-small">Logout</button>
           </div>
