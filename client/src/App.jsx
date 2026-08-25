@@ -42,6 +42,7 @@ export default function App() {
     price: "",
     cost: "",
     owners: [],
+    comment: "",
   });
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [editingGiftId, setEditingGiftId] = useState(null);
@@ -263,7 +264,7 @@ export default function App() {
     }
 
     const budgetItem = {
-      id: `budget_${Date.now()}`,
+      id: editingItemId || `budget_${Date.now()}`,
       description: newBudgetItem.description,
       amount: parseFloat(newBudgetItem.amount),
       category: newBudgetItem.category,
@@ -272,13 +273,22 @@ export default function App() {
 
     const updatedCampaign = {
       ...selectedCampaign,
-      budgetItems: [...selectedCampaign.budgetItems, budgetItem],
+      budgetItems: editingItemId
+        ? selectedCampaign.budgetItems.map(b => b.id === editingItemId ? budgetItem : b)
+        : [...selectedCampaign.budgetItems, budgetItem],
     };
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
     setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
+    setEditingItemId(null);
     setShowAddBudgetModal(false);
+  };
+
+  const handleEditBudgetItem = (item) => {
+    setNewBudgetItem({ description: item.description, amount: item.amount.toString(), category: item.category, comment: item.comment || "" });
+    setEditingItemId(item.id);
+    setShowAddBudgetModal(true);
   };
 
   const handleDeleteBudgetItem = (budgetId) => {
@@ -298,11 +308,12 @@ export default function App() {
     }
 
     const gift = {
-      id: `gift_${Date.now()}`,
+      id: editingGiftId || `gift_${Date.now()}`,
       name: newGiftItem.name,
       price: parseFloat(newGiftItem.price),
       cost: parseFloat(newGiftItem.cost),
       owners: newGiftItem.owners,
+      comment: newGiftItem.comment,
     };
 
     const updatedCampaign = {
@@ -314,9 +325,15 @@ export default function App() {
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
-    setNewGiftItem({ name: "", price: "", cost: "", owners: [] });
+    setNewGiftItem({ name: "", price: "", cost: "", owners: [], comment: "" });
     setEditingGiftId(null);
     setShowAddGiftModal(false);
+  };
+
+  const handleEditGift = (gift) => {
+    setNewGiftItem({ name: gift.name, price: gift.price.toString(), cost: gift.cost.toString(), owners: gift.owners, comment: gift.comment || "" });
+    setEditingGiftId(gift.id);
+    setShowAddGiftModal(true);
   };
 
   const handleDeleteGift = (giftId) => {
@@ -863,6 +880,7 @@ export default function App() {
                   <td>{item.comment || "-"}</td>
                   {canEdit && (
                     <td>
+                      <button onClick={() => handleEditBudgetItem(item)} className="btn-small">Edit</button>
                       <button onClick={() => handleDeleteBudgetItem(item.id)} className="btn-small btn-danger">Delete</button>
                     </td>
                   )}
@@ -874,7 +892,7 @@ export default function App() {
           {showAddBudgetModal && (
             <div className="modal-overlay" onClick={() => setShowAddBudgetModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
-                <h2>Add Budget Item</h2>
+                <h2>{editingItemId ? "Edit Budget Item" : "Add Budget Item"}</h2>
                 <input type="text" placeholder="Description" value={newBudgetItem.description} onChange={e => setNewBudgetItem({...newBudgetItem, description: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Amount" value={newBudgetItem.amount} onChange={e => setNewBudgetItem({...newBudgetItem, amount: e.target.value})} className="input-field" />
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
@@ -912,7 +930,7 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <button onClick={() => { setNewGiftItem({ name: "", price: "", cost: "", owners: [] }); setEditingGiftId(null); setShowAddGiftModal(true); }} className="btn-primary">
+                <button onClick={() => { setNewGiftItem({ name: "", price: "", cost: "", owners: [], comment: "" }); setEditingGiftId(null); setShowAddGiftModal(true); }} className="btn-primary">
                   + Add Gift
                 </button>
               )}
@@ -926,6 +944,7 @@ export default function App() {
                 <th>Price</th>
                 <th>Cost</th>
                 <th>Owners</th>
+                <th>Comment</th>
                 {canEdit && <th>Actions</th>}
               </tr>
             </thead>
@@ -937,8 +956,10 @@ export default function App() {
                     <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {gift.cost.toFixed(2)}</td>
                     <td>{gift.owners.join(", ")}</td>
+                    <td>{gift.comment || "-"}</td>
                     {canEdit && (
                       <td>
+                        <button onClick={() => handleEditGift(gift)} className="btn-small">Edit</button>
                         <button onClick={() => handleDeleteGift(gift.id)} className="btn-small btn-danger">Delete</button>
                       </td>
                     )}
@@ -946,7 +967,7 @@ export default function App() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={canEdit ? 5 : 4} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
+                  <td colSpan={canEdit ? 6 : 5} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
                 </tr>
               )}
             </tbody>
@@ -955,7 +976,7 @@ export default function App() {
           {showAddGiftModal && selectedCampaign && (
             <div className="modal-overlay" onClick={() => setShowAddGiftModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
-                <h2>Add Gift</h2>
+                <h2>{editingGiftId ? "Edit Gift" : "Add Gift"}</h2>
                 <input type="text" placeholder="Gift name" value={newGiftItem.name} onChange={e => setNewGiftItem({...newGiftItem, name: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Price" value={newGiftItem.price} onChange={e => setNewGiftItem({...newGiftItem, price: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Cost" value={newGiftItem.cost} onChange={e => setNewGiftItem({...newGiftItem, cost: e.target.value})} className="input-field" />
@@ -969,6 +990,9 @@ export default function App() {
                     </label>
                   ))}
                 </div>
+
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
+                <textarea placeholder="Add a comment (optional)" value={newGiftItem.comment} onChange={e => setNewGiftItem({...newGiftItem, comment: e.target.value})} className="input-field" style={{ minHeight: "80px", fontFamily: "inherit", resize: "vertical" }} />
 
                 <div className="modal-buttons">
                   <button onClick={handleAddGift} className="btn-primary">Save</button>
