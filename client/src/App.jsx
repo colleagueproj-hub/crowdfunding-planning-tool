@@ -183,6 +183,14 @@ export default function App() {
   const handleSaveNewItem = () => {
     if (!selectedCampaign || !newItemForm.name.trim() || !newItemForm.startDate || !newItemForm.endDate || !canEdit) return;
     
+    // Validate: end date must not be before start date
+    const startDate = new Date(newItemForm.startDate);
+    const endDate = new Date(newItemForm.endDate);
+    if (endDate < startDate) {
+      alert("End date cannot be before start date. Please select a valid date range.");
+      return;
+    }
+    
     // Validate: at least 1 owner
     if (newItemForm.owners.length === 0) {
       alert("Please select at least 1 owner");
@@ -620,17 +628,21 @@ export default function App() {
                         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                         const isSelected = newItemForm.endDate === dateStr;
                         const isToday = dateStr === todayStr;
+                        // Disable dates before start date
+                        const isBeforeStart = newItemForm.startDate && dateStr < newItemForm.startDate;
                         return (
                           <button
                             key={i}
-                            onClick={() => { setNewItemForm({...newItemForm, endDate: dateStr}); setShowEndDatePicker(false); }}
+                            onClick={() => { if (!isBeforeStart) { setNewItemForm({...newItemForm, endDate: dateStr}); setShowEndDatePicker(false); } }}
+                            disabled={isBeforeStart}
                             style={{
                               padding: "8px",
-                              background: isSelected ? "#d4af37" : isToday ? "#5a6a7a" : "#3a3a3a",
-                              color: isSelected ? "#1a1a1a" : "#ffffff",
+                              background: isBeforeStart ? "#5a3a3a" : isSelected ? "#d4af37" : isToday ? "#5a6a7a" : "#3a3a3a",
+                              color: isBeforeStart ? "#8a6a6a" : isSelected ? "#1a1a1a" : "#ffffff",
                               border: isToday ? "2px solid #d4af37" : "1px solid #505050",
+                              cursor: isBeforeStart ? "not-allowed" : "pointer",
+                              opacity: isBeforeStart ? 0.5 : 1,
                               borderRadius: "4px",
-                              cursor: "pointer",
                               fontWeight: isSelected || isToday ? "600" : "400"
                             }}
                           >
