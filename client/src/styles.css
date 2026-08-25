@@ -411,121 +411,123 @@ body {
 }
 
 @media (max-width: 768px) {
-  .container {
-    padding: 10px;
-    max-width: 100%;
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .header {
-    padding: 15px;
-    margin-bottom: 15px;
-  }
-
-  .header h1 {
-    font-size: 22px;
-    margin-bottom: 10px;
-  }
-
-  .header-controls {
-    flex-direction: column;
-    width: 100%;
-    gap: 10px;
-  }
-
-  .campaign-select, .btn-primary, .btn-secondary, .btn-small, .btn-danger {
-    width: 100%;
-    padding: 12px 16px;
-    font-size: 16px;
-    min-height: 44px;
-  }
-
-  .tabs {
-    flex-direction: column;
-    margin-bottom: 15px;
-  }
-
-  .tab {
-    padding: 15px;
-    font-size: 14px;
-    min-height: 44px;
-  }
-
-  .tab-content {
-    padding: 15px;
-  }
-
-  .items-table {
-    font-size: 13px;
-  }
-
-  .items-table th, .items-table td {
-    padding: 10px;
-  }
-
-  .modal {
-    padding: 20px;
-    max-width: 95vw;
-    max-height: 85vh;
-    border-radius: 12px;
-  }
-
-  .modal h2 {
-    font-size: 20px;
-    margin-bottom: 15px;
-  }
-
-  .input-field {
-    padding: 12px;
-    font-size: 16px;
-    min-height: 44px;
-  }
-
-  .modal-buttons {
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
-  }
-
-  .modal-buttons button {
-    width: 100%;
-    min-height: 44px;
-    padding: 12px;
-    font-size: 16px;
-  }
-
-  .checkbox-label, .radio-label {
-    font-size: 15px;
-    padding: 10px;
-    margin-bottom: 8px;
-  }
-
-  .sync-status {
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-
-  .badge {
-    padding: 6px 12px;
-    font-size: 12px;
-    min-height: 28px;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .reminder-options {
-    padding: 12px;
-    border-radius: 6px;
-  }
-}
-
-@media (max-width: 480px) {
   .container {
     padding: 8px;
+    max-width: 100%;
+    width: 100%;
   }
 
   .header {
     padding: 12px;
     margin-bottom: 12px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .campaign-select, .btn-primary, .btn-secondary, .btn-small, .btn-danger {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  .tabs {
+    flex-direction: column;
+    margin-bottom: 12px;
+  }
+
+  .tab {
+    padding: 14px;
+    font-size: 14px;
+    min-height: 48px;
+  }
+
+  .tab-content {
+    padding: 12px;
+  }
+
+  .items-table {
+    font-size: 13px;
+    display: block;
+  }
+
+  .items-table thead {
+    display: none;
+  }
+
+  .items-table tbody {
+    display: block;
+  }
+
+  .items-table tr {
+    display: block;
+    margin-bottom: 16px;
+    background: #3a3a3a;
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #505050;
+  }
+
+  .items-table td {
+    display: block;
+    padding: 10px 0;
+    text-align: left;
+    word-break: break-word;
+  }
+
+  .modal {
+    padding: 16px;
+    max-width: 100vw;
+    width: 100vw;
+    max-height: 90vh;
+  }
+
+  .modal h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .input-field {
+    padding: 14px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .checkbox-label, .radio-label {
+    font-size: 16px;
+    padding: 12px;
+    min-height: 48px;
+  }
+
+  textarea.input-field {
+    min-height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 6px;
+  }
+
+  .header {
+    padding: 10px;
+    margin-bottom: 10px;
   }
 
   .header h1 {
@@ -533,105 +535,75 @@ body {
   }
 
   .header-logo {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
   }
 
   .btn-primary, .btn-secondary, .btn-small, .btn-danger {
-    padding: 12px 16px;
+    padding: 14px 16px;
     font-size: 15px;
-    min-height: 44px;
+    min-height: 48px;
     width: 100%;
   }
 
   .campaign-select {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     font-size: 16px;
-    min-height: 44px;
+    min-height: 48px;
   }
 
   .items-table {
-    font-size: 12px;
+    font-size: 13px;
+    display: block;
   }
 
-  .items-table th {
-    padding: 10px 6px;
-    font-size: 11px;
+  .items-table thead {
+    display: none;
+  }
+
+  .items-table tbody {
+    display: block;
+  }
+
+  .items-table tr {
+    display: block;
+    margin-bottom: 16px;
+    background: #3a3a3a;
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #505050;
   }
 
   .items-table td {
-    padding: 10px 6px;
-    font-size: 12px;
+    display: block;
+    padding: 10px 0;
+    word-break: break-word;
   }
 
   .tab {
     padding: 12px;
     font-size: 13px;
-    min-height: 44px;
   }
 
   .modal {
-    padding: 16px;
-    max-width: 98vw;
-    max-height: 80vh;
-    border-radius: 10px;
+    padding: 14px;
+    max-width: 100vw;
+    max-height: 90vh;
   }
 
   .modal h2 {
     font-size: 18px;
-    margin-bottom: 15px;
-  }
-
-  .modal h3 {
-    font-size: 15px;
-  }
-
-  .input-field {
-    padding: 12px;
-    font-size: 16px;
-    min-height: 44px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .checkbox-label, .radio-label {
-    font-size: 14px;
-    padding: 8px;
-    margin-bottom: 8px;
+    font-size: 15px;
+    padding: 12px;
+    min-height: 48px;
   }
 
-  .badge {
-    padding: 6px 10px;
-    font-size: 11px;
-    min-height: 26px;
-  }
-
-  .gantt-container {
-    overflow-x: auto;
-    margin: 15px 0;
-  }
-
-  .sync-status {
-    font-size: 11px;
-    padding: 6px 10px;
-  }
-
-  .settings-list {
-    margin-bottom: 12px;
-  }
-
-  .list-item {
-    padding: 8px;
-    font-size: 13px;
-  }
-
-  .budget-summary {
-    padding: 15px;
-    margin-bottom: 15px;
-  }
-
-  .reminder-options {
-    padding: 10px;
-    margin-bottom: 12px;
+  textarea.input-field {
+    min-height: 120px;
   }
 }
