@@ -33,6 +33,9 @@ export default function App() {
   });
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [syncStatus, setSyncStatus] = useState("✓ Synced");
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(new Date());
 
   useEffect(() => {
     if (user) {
@@ -409,10 +412,108 @@ export default function App() {
                 <input type="text" placeholder="Task name" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} className="input-field" />
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>📅 Start Date</label>
-                <input type="date" value={newItemForm.startDate} onChange={e => setNewItemForm({...newItemForm, startDate: e.target.value})} className="input-field" />
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={newItemForm.startDate ? new Date(newItemForm.startDate).toLocaleDateString() : "Select date..."} 
+                    className="input-field" 
+                    style={{ flex: 1, cursor: "pointer", background: "#2a2a2a" }}
+                    onClick={() => { setShowStartDatePicker(!showStartDatePicker); setPickerMonth(newItemForm.startDate ? new Date(newItemForm.startDate) : new Date()); }}
+                  />
+                </div>
+                {showStartDatePicker && (
+                  <div style={{ background: "#4a4a4a", padding: "15px", borderRadius: "6px", marginBottom: "15px", border: "1px solid #606060" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", color: "#ffffff" }}>
+                      <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1))} className="btn-small" style={{ padding: "5px 10px" }}>←</button>
+                      <span style={{ fontWeight: "600" }}>{pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                      <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1))} className="btn-small" style={{ padding: "5px 10px" }}>→</button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "5px", marginBottom: "10px" }}>
+                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                        <div key={day} style={{ textAlign: "center", color: "#d4af37", fontSize: "12px", fontWeight: "600" }}>{day}</div>
+                      ))}
+                      {Array.from({ length: new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), 1).getDay() }).map((_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))}
+                      {Array.from({ length: new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 0).getDate() }).map((_, i) => {
+                        const date = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1);
+                        const dateStr = date.toISOString().split('T')[0];
+                        const isSelected = newItemForm.startDate === dateStr;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { setNewItemForm({...newItemForm, startDate: dateStr}); setShowStartDatePicker(false); }}
+                            style={{
+                              padding: "8px",
+                              background: isSelected ? "#d4af37" : "#3a3a3a",
+                              color: isSelected ? "#1a1a1a" : "#ffffff",
+                              border: "1px solid #505050",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontWeight: isSelected ? "600" : "400"
+                            }}
+                          >
+                            {i + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button onClick={() => setShowStartDatePicker(false)} className="btn-secondary" style={{ width: "100%" }}>Done</button>
+                  </div>
+                )}
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>📅 End Date</label>
-                <input type="date" value={newItemForm.endDate} onChange={e => setNewItemForm({...newItemForm, endDate: e.target.value})} className="input-field" />
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={newItemForm.endDate ? new Date(newItemForm.endDate).toLocaleDateString() : "Select date..."} 
+                    className="input-field" 
+                    style={{ flex: 1, cursor: "pointer", background: "#2a2a2a" }}
+                    onClick={() => { setShowEndDatePicker(!showEndDatePicker); setPickerMonth(newItemForm.endDate ? new Date(newItemForm.endDate) : new Date()); }}
+                  />
+                </div>
+                {showEndDatePicker && (
+                  <div style={{ background: "#4a4a4a", padding: "15px", borderRadius: "6px", marginBottom: "15px", border: "1px solid #606060" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", color: "#ffffff" }}>
+                      <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1))} className="btn-small" style={{ padding: "5px 10px" }}>←</button>
+                      <span style={{ fontWeight: "600" }}>{pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                      <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1))} className="btn-small" style={{ padding: "5px 10px" }}>→</button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "5px", marginBottom: "10px" }}>
+                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                        <div key={day} style={{ textAlign: "center", color: "#d4af37", fontSize: "12px", fontWeight: "600" }}>{day}</div>
+                      ))}
+                      {Array.from({ length: new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), 1).getDay() }).map((_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))}
+                      {Array.from({ length: new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 0).getDate() }).map((_, i) => {
+                        const date = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1);
+                        const dateStr = date.toISOString().split('T')[0];
+                        const isSelected = newItemForm.endDate === dateStr;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { setNewItemForm({...newItemForm, endDate: dateStr}); setShowEndDatePicker(false); }}
+                            style={{
+                              padding: "8px",
+                              background: isSelected ? "#d4af37" : "#3a3a3a",
+                              color: isSelected ? "#1a1a1a" : "#ffffff",
+                              border: "1px solid #505050",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontWeight: isSelected ? "600" : "400"
+                            }}
+                          >
+                            {i + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button onClick={() => setShowEndDatePicker(false)} className="btn-secondary" style={{ width: "100%" }}>Done</button>
+                  </div>
+                )}
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Status</label>
                 <select value={newItemForm.status} onChange={e => setNewItemForm({...newItemForm, status: e.target.value})} className="input-field">
