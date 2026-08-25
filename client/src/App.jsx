@@ -946,6 +946,7 @@ export default function App() {
                 <th>Price</th>
                 <th>Cost</th>
                 <th>Suggested Quantity</th>
+                <th>Estimated Profit</th>
                 <th>Owners</th>
                 <th>Comment</th>
                 {canEdit && <th>Actions</th>}
@@ -953,12 +954,15 @@ export default function App() {
             </thead>
             <tbody>
               {selectedCampaign?.gifts && selectedCampaign.gifts.length > 0 ? (
-                selectedCampaign.gifts.map(gift => (
+                selectedCampaign.gifts.map(gift => {
+                  const estimatedProfit = gift.suggestedQuantity ? (gift.price * gift.suggestedQuantity) : 0;
+                  return (
                   <tr key={gift.id}>
                     <td>{gift.name}</td>
                     <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {gift.cost.toFixed(2)}</td>
                     <td>{gift.suggestedQuantity || "-"}</td>
+                    <td>{selectedCampaign.currency} {estimatedProfit.toFixed(2)}</td>
                     <td>{gift.owners.join(", ")}</td>
                     <td>{gift.comment || "-"}</td>
                     {canEdit && (
@@ -968,10 +972,11 @@ export default function App() {
                       </td>
                     )}
                   </tr>
-                ))
+                );
+                })
               ) : (
                 <tr>
-                  <td colSpan={canEdit ? 7 : 6} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
+                  <td colSpan={canEdit ? 8 : 7} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
                 </tr>
               )}
             </tbody>
