@@ -483,7 +483,8 @@ export default function App() {
                       ))}
                       {Array.from({ length: new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 0).getDate() }).map((_, i) => {
                         const date = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1);
-                        const dateStr = date.toISOString().split('T')[0];
+                        // Format as YYYY-MM-DD in local timezone (no UTC conversion)
+                        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                         const isSelected = newItemForm.startDate === dateStr;
                         return (
                           <button
@@ -535,7 +536,8 @@ export default function App() {
                       ))}
                       {Array.from({ length: new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 0).getDate() }).map((_, i) => {
                         const date = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1);
-                        const dateStr = date.toISOString().split('T')[0];
+                        // Format as YYYY-MM-DD in local timezone (no UTC conversion)
+                        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                         const isSelected = newItemForm.endDate === dateStr;
                         return (
                           <button
