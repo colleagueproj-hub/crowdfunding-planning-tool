@@ -12,9 +12,62 @@
     <link rel="apple-touch-icon" href="/logo.png">
     <link rel="manifest" href="/manifest.json">
     <title>Weeping Willow Tree - Crowdfunding App</title>
+    <style>
+      .splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #1a1a1a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      .splash-logo {
+        width: 150px;
+        height: 150px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        animation: fadeInScale 0.6s ease-in-out;
+      }
+      .splash-title {
+        color: #d4af37;
+        font-size: 28px;
+        font-family: "Georgia", "Garamond", serif;
+        text-align: center;
+        margin-bottom: 10px;
+        animation: fadeIn 0.8s ease-in-out;
+      }
+      .splash-subtitle {
+        color: #d4af37;
+        font-size: 14px;
+        font-family: "Georgia", "Garamond", serif;
+        text-align: center;
+        animation: fadeIn 1s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes fadeInScale {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      #root:not(:empty) ~ .splash-screen {
+        display: none;
+      }
+    </style>
 </head>
 <body>
     <div id="root"></div>
+    <div class="splash-screen">
+      <img src="/crowdfunding-planning-tool/logo.png" alt="Weeping Willow Tree" class="splash-logo" onerror="this.style.display='none'" />
+      <div class="splash-title">Weeping Willow Tree</div>
+      <div class="splash-subtitle">Crowd sourcing campaign</div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
         if ('serviceWorker' in navigator) {
