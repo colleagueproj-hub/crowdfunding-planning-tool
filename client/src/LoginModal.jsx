@@ -51,7 +51,16 @@ export default function LoginModal({ onLoginSuccess }) {
   return (
     <div className="modal-overlay">
       <div className="modal login-modal">
-        <h1>🚀 Crowdfunding Planning Tool</h1>
+        <div style={{ textAlign: "center", marginBottom: "30px" }}>
+          <img 
+            src={`${import.meta.env.BASE_URL}logo.png`} 
+            alt="Weeping Willow Tree" 
+            style={{ width: "120px", height: "120px", borderRadius: "8px", marginBottom: "15px" }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+          <h1 style={{ margin: "0 0 5px 0", color: "#d4af37" }}>Weeping Willow Tree</h1>
+          <p style={{ margin: "0", color: "#d4af37", fontSize: "14px" }}>Crowd sourcing campaign</p>
+        </div>
         
         <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
           <button
@@ -61,8 +70,8 @@ export default function LoginModal({ onLoginSuccess }) {
               padding: "10px",
               border: "none",
               borderRadius: "6px",
-              background: mode === "login" ? "#667eea" : "#e9ecef",
-              color: mode === "login" ? "white" : "#333",
+              background: mode === "login" ? "#d4af37" : "#505050",
+              color: mode === "login" ? "#1a1a1a" : "#d4af37",
               cursor: "pointer",
               fontWeight: "600"
             }}
@@ -76,8 +85,8 @@ export default function LoginModal({ onLoginSuccess }) {
               padding: "10px",
               border: "none",
               borderRadius: "6px",
-              background: mode === "signup" ? "#667eea" : "#e9ecef",
-              color: mode === "signup" ? "white" : "#333",
+              background: mode === "signup" ? "#d4af37" : "#505050",
+              color: mode === "signup" ? "#1a1a1a" : "#d4af37",
               cursor: "pointer",
               fontWeight: "600"
             }}
@@ -115,7 +124,7 @@ export default function LoginModal({ onLoginSuccess }) {
             disabled={loading}
           />
 
-          {error && <p style={{ color: "red", marginBottom: "15px" }}>{error}</p>}
+          {error && <p style={{ color: "#ff6b6b", marginBottom: "15px" }}>{error}</p>}
 
           <button
             type="submit"
@@ -127,7 +136,7 @@ export default function LoginModal({ onLoginSuccess }) {
           </button>
         </form>
 
-        <p style={{ fontSize: "12px", color: "#999", marginTop: "20px", textAlign: "center" }}>
+        <p style={{ fontSize: "12px", color: "#d4af37", marginTop: "20px", textAlign: "center" }}>
           {mode === "login"
             ? "Demo: any email/password works"
             : "New account will be created automatically"}
