@@ -587,6 +587,7 @@ export default function App() {
                   ))}
                 </div>
 
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>🔔 Reminder</label>
                 <label className="checkbox-label">
                   <input type="checkbox" checked={newItemForm.reminderEnabled} onChange={e => setNewItemForm({...newItemForm, reminderEnabled: e.target.checked})} />
                   Enable Reminder
