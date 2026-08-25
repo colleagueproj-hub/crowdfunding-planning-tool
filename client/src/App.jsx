@@ -835,10 +835,16 @@ export default function App() {
                   ) : (
                     <div>
                       {(() => {
+                        // Parse dates correctly (YYYY-MM-DD format)
+                        const parseDate = (dateStr) => {
+                          const [year, month, day] = dateStr.split('-').map(Number);
+                          return new Date(year, month - 1, day);
+                        };
+                        
                         // Calculate the date range from all planning items
                         const dates = selectedCampaign.planningItems.flatMap(item => [
-                          new Date(item.startDate),
-                          new Date(item.endDate)
+                          parseDate(item.startDate),
+                          parseDate(item.endDate)
                         ]);
                         const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
                         const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
@@ -847,31 +853,54 @@ export default function App() {
                         minDate.setDate(minDate.getDate() - 5);
                         maxDate.setDate(maxDate.getDate() + 5);
                         
-                        // Calculate total days to display
+                        // Group dates by month
+                        const monthGroups = [];
+                        let currentDate = new Date(minDate);
+                        while (currentDate <= maxDate) {
+                          const year = currentDate.getFullYear();
+                          const month = currentDate.getMonth();
+                          const monthStart = new Date(year, month, 1);
+                          const monthEnd = new Date(year, month + 1, 0);
+                          
+                          const startInRange = monthStart < minDate ? minDate : monthStart;
+                          const endInRange = monthEnd > maxDate ? maxDate : monthEnd;
+                          
+                          const daysInRange = Math.ceil((endInRange - startInRange) / (1000 * 60 * 60 * 24)) + 1;
+                          const monthLabel = monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                          
+                          monthGroups.push({
+                            label: monthLabel,
+                            startDate: startInRange,
+                            endDate: endInRange,
+                            daysInRange: daysInRange,
+                            fullMonthStart: monthStart,
+                            fullMonthEnd: monthEnd
+                          });
+                          
+                          currentDate = new Date(year, month + 1, 1);
+                        }
+                        
                         const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
 
                         return (
                           <>
-                            {/* Timeline Header */}
-                            <div style={{ display: "flex", marginBottom: "20px", fontSize: "11px", color: "#ffffff", paddingLeft: "200px" }}>
-                              {Array.from({ length: totalDays }).map((_, i) => {
-                                const dateObj = new Date(minDate);
-                                dateObj.setDate(dateObj.getDate() + i);
-                                const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                const isFirstOfMonth = dateObj.getDate() === 1;
+                            {/* Month Headers */}
+                            <div style={{ display: "flex", marginBottom: "5px", fontSize: "12px", color: "#ffffff", paddingLeft: "200px", fontWeight: "600" }}>
+                              {monthGroups.map((month, idx) => {
+                                const monthWidth = (month.daysInRange / totalDays) * 100;
                                 return (
                                   <div 
-                                    key={i} 
+                                    key={idx} 
                                     style={{ 
-                                      flex: 1, 
-                                      textAlign: "center", 
-                                      borderRight: "1px solid #505050", 
-                                      paddingRight: "5px",
-                                      background: isFirstOfMonth ? "#3a4a3a" : "transparent",
-                                      padding: "4px 0"
+                                      width: `${monthWidth}%`,
+                                      textAlign: "center",
+                                      background: "#3a4a3a",
+                                      borderRight: "2px solid #505050",
+                                      padding: "8px 0",
+                                      color: "#d4af37"
                                     }}
                                   >
-                                    {dateStr}
+                                    {month.label}
                                   </div>
                                 );
                               })}
@@ -879,12 +908,12 @@ export default function App() {
 
                             {/* Gantt Bars */}
                             {selectedCampaign.planningItems.map((item) => {
-                              const startDate = new Date(item.startDate);
-                              const endDate = new Date(item.endDate);
+                              const startDate = parseDate(item.startDate);
+                              const endDate = parseDate(item.endDate);
                               
                               // Calculate position and width relative to the displayed timeline
                               const daysFromStart = Math.floor((startDate - minDate) / (1000 * 60 * 60 * 24));
-                              const durationDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+                              const durationDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
                               
                               const barStartPercent = (daysFromStart / totalDays) * 100;
                               const barWidthPercent = (durationDays / totalDays) * 100;
@@ -895,18 +924,30 @@ export default function App() {
                                     {item.name}
                                   </div>
                                   <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center" }}>
-                                    {/* Background grid */}
-                                    {Array.from({ length: totalDays }).map((_, i) => (
-                                      <div key={i} style={{ flex: 1, borderRight: "1px solid #505050", height: "100%" }} />
-                                    ))}
+                                    {/* Background grid by month */}
+                                    {monthGroups.map((month, idx) => {
+                                      const monthWidth = (month.daysInRange / totalDays) * 100;
+                                      return (
+                                        <div 
+                                          key={idx} 
+                                          style={{ 
+                                            width: `${monthWidth}%`, 
+                                            height: "100%",
+                                            borderRight: "2px solid #505050",
+                                            display: "flex",
+                                            background: idx % 2 === 0 ? "transparent" : "rgba(100, 100, 100, 0.1)"
+                                          }} 
+                                        />
+                                      );
+                                    })}
                                     
                                     {/* Bar */}
-                                    {barStartPercent < 100 && (
+                                    {barStartPercent < 100 && barWidthPercent > 0 && (
                                       <div
                                         style={{
                                           position: "absolute",
                                           left: `${barStartPercent}%`,
-                                          width: `${barWidthPercent}%`,
+                                          width: `${Math.min(barWidthPercent, 100 - barStartPercent)}%`,
                                           height: "30px",
                                           background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? "#d4af37" : "#6a6a6a",
                                           borderRadius: "4px",
