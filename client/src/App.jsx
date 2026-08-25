@@ -166,6 +166,21 @@ export default function App() {
 
   const handleSaveNewItem = () => {
     if (!selectedCampaign || !newItemForm.name.trim() || !newItemForm.startDate || !newItemForm.endDate || !canEdit) return;
+    
+    // Validate: at least 1 owner
+    if (newItemForm.owners.length === 0) {
+      alert("Please select at least 1 owner");
+      return;
+    }
+    
+    // Determine participants: use selected or default to owners
+    const participants = newItemForm.participants.length > 0 ? newItemForm.participants : newItemForm.owners;
+    
+    // Validate: at least 1 participant
+    if (participants.length === 0) {
+      alert("Please select at least 1 participant (or add owners first)");
+      return;
+    }
 
     const item = {
       id: `item_${Date.now()}`,
@@ -174,7 +189,7 @@ export default function App() {
       endDate: newItemForm.endDate,
       status: newItemForm.status,
       owners: newItemForm.owners,
-      participants: newItemForm.participants.length > 0 ? newItemForm.participants : newItemForm.owners,
+      participants: participants,
       reminderEnabled: newItemForm.reminderEnabled,
       reminderDays: newItemForm.reminderDays,
     };
@@ -221,6 +236,17 @@ export default function App() {
 
   const handleAddBudgetItem = () => {
     if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount || !canEdit) return;
+    
+    // Validate: campaign must have at least 1 owner and 1 participant
+    if (selectedCampaign.owners.length === 0) {
+      alert("Please add at least 1 owner to the campaign first (go to Campaign Settings)");
+      return;
+    }
+    
+    if (selectedCampaign.participants.length === 0) {
+      alert("Please add at least 1 participant to the campaign first (go to Campaign Settings)");
+      return;
+    }
 
     const budgetItem = {
       id: `budget_${Date.now()}`,
