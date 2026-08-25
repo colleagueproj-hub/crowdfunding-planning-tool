@@ -72,7 +72,13 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                  for(let registration of registrations) {
+                    registration.unregister();
+                  }
+                });
+                
+                navigator.serviceWorker.register('/crowdfunding-planning-tool/service-worker.js?v=' + new Date().getTime())
                     .then((registration) => {
                         console.log('Service Worker registered successfully:', registration);
                     })
