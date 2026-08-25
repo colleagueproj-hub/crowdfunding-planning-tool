@@ -1,5 +1,5 @@
 const HARDCODED_SHEET_ID = "19Qir2g-4lZBJWuMvWudybqkIemqZxkeghEFfZsjJpfE";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIBYBP--3Y7Ckb1Qxv9s0v9xVtadc_H1hV9PLyvpSAi1XpyKoJ0K44f14erK2cp45e6w/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWpb4BJlVt49kH_i9oSYWqBX1OnhZxgNluMUWBih4LtxuoxdBM3UJfF2KAbnU_rwLk_Q/exec";
 
 export async function loginUser(email, password, name, isSignUp) {
   try {
