@@ -759,11 +759,16 @@ export default function App() {
                   <div style={{ minWidth: "800px" }}>
                     {/* Timeline Header */}
                     <div style={{ display: "flex", marginBottom: "20px", fontSize: "12px", color: "#ffffff", paddingLeft: "200px" }}>
-                      {Array.from({ length: 25 }).map((_, i) => (
-                        <div key={i} style={{ flex: 1, textAlign: "center", borderRight: "1px solid #505050", paddingRight: "5px" }}>
-                          +{i}
-                        </div>
-                      ))}
+                      {Array.from({ length: 25 }).map((_, i) => {
+                        const dateObj = new Date();
+                        dateObj.setDate(dateObj.getDate() + i);
+                        const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        return (
+                          <div key={i} style={{ flex: 1, textAlign: "center", borderRight: "1px solid #505050", paddingRight: "5px" }}>
+                            {dateStr}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Gantt Bars */}
