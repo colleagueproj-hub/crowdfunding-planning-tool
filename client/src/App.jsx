@@ -29,7 +29,8 @@ export default function App() {
   const [newBudgetItem, setNewBudgetItem] = useState({
     description: "",
     amount: "",
-    category: "marketing",
+    category: "recordings",
+    comment: "",
   });
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [syncStatus, setSyncStatus] = useState("✓ Synced");
@@ -266,6 +267,7 @@ export default function App() {
       description: newBudgetItem.description,
       amount: parseFloat(newBudgetItem.amount),
       category: newBudgetItem.category,
+      comment: newBudgetItem.comment,
     };
 
     const updatedCampaign = {
@@ -275,7 +277,7 @@ export default function App() {
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
-    setNewBudgetItem({ description: "", amount: "", category: "marketing" });
+    setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
     setShowAddBudgetModal(false);
   };
 
@@ -848,6 +850,7 @@ export default function App() {
                 <th>Description</th>
                 <th>Category</th>
                 <th>Amount</th>
+                <th>Comment</th>
                 {canEdit && <th>Actions</th>}
               </tr>
             </thead>
@@ -857,6 +860,7 @@ export default function App() {
                   <td>{item.description}</td>
                   <td>{item.category}</td>
                   <td>{selectedCampaign.currency} {item.amount.toFixed(2)}</td>
+                  <td>{item.comment || "-"}</td>
                   {canEdit && (
                     <td>
                       <button onClick={() => handleDeleteBudgetItem(item.id)} className="btn-small btn-danger">Delete</button>
@@ -873,12 +877,15 @@ export default function App() {
                 <h2>Add Budget Item</h2>
                 <input type="text" placeholder="Description" value={newBudgetItem.description} onChange={e => setNewBudgetItem({...newBudgetItem, description: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Amount" value={newBudgetItem.amount} onChange={e => setNewBudgetItem({...newBudgetItem, amount: e.target.value})} className="input-field" />
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
                 <select value={newBudgetItem.category} onChange={e => setNewBudgetItem({...newBudgetItem, category: e.target.value})} className="input-field">
-                  <option value="marketing">Marketing</option>
-                  <option value="development">Development</option>
-                  <option value="operations">Operations</option>
+                  <option value="recordings">Recordings</option>
+                  <option value="visual">Visual</option>
+                  <option value="live">Live</option>
                   <option value="other">Other</option>
                 </select>
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
+                <textarea placeholder="Add a comment (optional)" value={newBudgetItem.comment} onChange={e => setNewBudgetItem({...newBudgetItem, comment: e.target.value})} className="input-field" style={{ minHeight: "80px", fontFamily: "inherit", resize: "vertical" }} />
                 <div className="modal-buttons">
                   <button onClick={handleAddBudgetItem} className="btn-primary">Save</button>
                   <button onClick={() => setShowAddBudgetModal(false)} className="btn-secondary">Cancel</button>
