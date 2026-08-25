@@ -43,6 +43,7 @@ export default function App() {
     cost: "",
     owners: [],
     comment: "",
+    suggestedQuantity: "",
   });
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [editingGiftId, setEditingGiftId] = useState(null);
@@ -314,6 +315,7 @@ export default function App() {
       cost: parseFloat(newGiftItem.cost),
       owners: newGiftItem.owners,
       comment: newGiftItem.comment,
+      suggestedQuantity: newGiftItem.suggestedQuantity ? parseInt(newGiftItem.suggestedQuantity) : null,
     };
 
     const updatedCampaign = {
@@ -325,13 +327,13 @@ export default function App() {
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
-    setNewGiftItem({ name: "", price: "", cost: "", owners: [], comment: "" });
+    setNewGiftItem({ name: "", price: "", cost: "", owners: [], comment: "", suggestedQuantity: "" });
     setEditingGiftId(null);
     setShowAddGiftModal(false);
   };
 
   const handleEditGift = (gift) => {
-    setNewGiftItem({ name: gift.name, price: gift.price.toString(), cost: gift.cost.toString(), owners: gift.owners, comment: gift.comment || "" });
+    setNewGiftItem({ name: gift.name, price: gift.price.toString(), cost: gift.cost.toString(), owners: gift.owners, comment: gift.comment || "", suggestedQuantity: gift.suggestedQuantity ? gift.suggestedQuantity.toString() : "" });
     setEditingGiftId(gift.id);
     setShowAddGiftModal(true);
   };
@@ -943,6 +945,7 @@ export default function App() {
                 <th>Gift Name</th>
                 <th>Price</th>
                 <th>Cost</th>
+                <th>Quantity</th>
                 <th>Owners</th>
                 <th>Comment</th>
                 {canEdit && <th>Actions</th>}
@@ -955,6 +958,7 @@ export default function App() {
                     <td>{gift.name}</td>
                     <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {gift.cost.toFixed(2)}</td>
+                    <td>{gift.suggestedQuantity || "-"}</td>
                     <td>{gift.owners.join(", ")}</td>
                     <td>{gift.comment || "-"}</td>
                     {canEdit && (
@@ -967,7 +971,7 @@ export default function App() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={canEdit ? 6 : 5} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
+                  <td colSpan={canEdit ? 7 : 6} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
                 </tr>
               )}
             </tbody>
@@ -980,6 +984,7 @@ export default function App() {
                 <input type="text" placeholder="Gift name" value={newGiftItem.name} onChange={e => setNewGiftItem({...newGiftItem, name: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Price" value={newGiftItem.price} onChange={e => setNewGiftItem({...newGiftItem, price: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Cost" value={newGiftItem.cost} onChange={e => setNewGiftItem({...newGiftItem, cost: e.target.value})} className="input-field" />
+                <input type="number" placeholder="Suggested Quantity (optional)" value={newGiftItem.suggestedQuantity} onChange={e => setNewGiftItem({...newGiftItem, suggestedQuantity: e.target.value})} className="input-field" />
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Gift Owner(s):</label>
                 <div className="checkbox-group">
