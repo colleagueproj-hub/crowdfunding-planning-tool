@@ -910,8 +910,8 @@ export default function App() {
                       today.setHours(0, 0, 0, 0);
                       reminderDate.setHours(0, 0, 0, 0);
                       
-                      // Disable if reminder date is today or before
-                      const isDisabled = reminderDate <= today;
+                      // Disable if reminder date is before today
+                      const isDisabled = reminderDate < today;
                       
                       return (
                         <label key={days} className="radio-label" style={{ opacity: isDisabled ? 0.5 : 1, cursor: isDisabled ? "not-allowed" : "pointer" }}>
