@@ -591,7 +591,7 @@ export default function App() {
       {notifications.length > 0 && (
         <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={() => setNotifications([])}>
           <div className="modal" style={{ maxWidth: "600px" }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ color: "#d4af37", marginBottom: "20px" }}>🔔 Reminder</h2>
+            <h2 style={{ color: "#d4af37", marginBottom: "20px", fontSize: "18px" }}>🔔 {notifications[0]?.message || "Notification"}</h2>
             {notifications.map(notif => (
               <div key={`${notif.email}_${notif.task}`} style={{ marginBottom: "20px", padding: "15px", background: "#3a3a3a", borderRadius: "6px", borderLeft: "4px solid #d4af37" }}>
                 <p style={{ margin: "10px 0", fontSize: "16px", color: "#ffffff", fontWeight: "600" }}>
