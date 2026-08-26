@@ -216,10 +216,24 @@ export default function App() {
   const handleSaveOwner = () => {
     if (editingOwnerIdx === null || !editOwnerName.trim() || !editOwnerEmail.trim()) return;
     const updatedOwners = [...selectedCampaign.owners];
+    const oldOwner = updatedOwners[editingOwnerIdx];
+    const oldEmail = typeof oldOwner === 'object' ? oldOwner.email : '';
+    
     updatedOwners[editingOwnerIdx] = { name: editOwnerName, email: editOwnerEmail };
+    
+    // Update matching participant if exists
+    let updatedParticipants = [...selectedCampaign.participants];
+    const participantIdx = updatedParticipants.findIndex(p => 
+      (typeof p === 'object' ? p.email : '') === oldEmail
+    );
+    if (participantIdx !== -1) {
+      updatedParticipants[participantIdx] = { name: editOwnerName, email: editOwnerEmail };
+    }
+    
     const updatedCampaign = {
       ...selectedCampaign,
       owners: updatedOwners,
+      participants: updatedParticipants,
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
@@ -228,19 +242,26 @@ export default function App() {
     setEditOwnerEmail("");
   };
 
-  const handleEditParticipant = (index) => {
-    const participant = selectedCampaign.participants[index];
-    setEditingParticipantIdx(index);
-    setEditParticipantName(typeof participant === 'object' ? participant.name : participant);
-    setEditParticipantEmail(typeof participant === 'object' ? participant.email : '');
-  };
-
   const handleSaveParticipant = () => {
     if (editingParticipantIdx === null || !editParticipantName.trim() || !editParticipantEmail.trim()) return;
     const updatedParticipants = [...selectedCampaign.participants];
+    const oldParticipant = updatedParticipants[editingParticipantIdx];
+    const oldEmail = typeof oldParticipant === 'object' ? oldParticipant.email : '';
+    
     updatedParticipants[editingParticipantIdx] = { name: editParticipantName, email: editParticipantEmail };
+    
+    // Update matching owner if exists
+    let updatedOwners = [...selectedCampaign.owners];
+    const ownerIdx = updatedOwners.findIndex(o => 
+      (typeof o === 'object' ? o.email : '') === oldEmail
+    );
+    if (ownerIdx !== -1) {
+      updatedOwners[ownerIdx] = { name: editParticipantName, email: editParticipantEmail };
+    }
+    
     const updatedCampaign = {
       ...selectedCampaign,
+      owners: updatedOwners,
       participants: updatedParticipants,
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
