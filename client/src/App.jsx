@@ -50,6 +50,12 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [newOwnerEmail, setNewOwnerEmail] = useState("");
   const [newParticipantEmail, setNewParticipantEmail] = useState("");
+  const [editingOwnerIdx, setEditingOwnerIdx] = useState(null);
+  const [editingParticipantIdx, setEditingParticipantIdx] = useState(null);
+  const [editOwnerName, setEditOwnerName] = useState("");
+  const [editOwnerEmail, setEditOwnerEmail] = useState("");
+  const [editParticipantName, setEditParticipantName] = useState("");
+  const [editParticipantEmail, setEditParticipantEmail] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -198,6 +204,50 @@ export default function App() {
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+  };
+
+  const handleEditOwner = (index) => {
+    const owner = selectedCampaign.owners[index];
+    setEditingOwnerIdx(index);
+    setEditOwnerName(typeof owner === 'object' ? owner.name : owner);
+    setEditOwnerEmail(typeof owner === 'object' ? owner.email : '');
+  };
+
+  const handleSaveOwner = () => {
+    if (editingOwnerIdx === null || !editOwnerName.trim() || !editOwnerEmail.trim()) return;
+    const updatedOwners = [...selectedCampaign.owners];
+    updatedOwners[editingOwnerIdx] = { name: editOwnerName, email: editOwnerEmail };
+    const updatedCampaign = {
+      ...selectedCampaign,
+      owners: updatedOwners,
+    };
+    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    setSelectedCampaign(updatedCampaign);
+    setEditingOwnerIdx(null);
+    setEditOwnerName("");
+    setEditOwnerEmail("");
+  };
+
+  const handleEditParticipant = (index) => {
+    const participant = selectedCampaign.participants[index];
+    setEditingParticipantIdx(index);
+    setEditParticipantName(typeof participant === 'object' ? participant.name : participant);
+    setEditParticipantEmail(typeof participant === 'object' ? participant.email : '');
+  };
+
+  const handleSaveParticipant = () => {
+    if (editingParticipantIdx === null || !editParticipantName.trim() || !editParticipantEmail.trim()) return;
+    const updatedParticipants = [...selectedCampaign.participants];
+    updatedParticipants[editingParticipantIdx] = { name: editParticipantName, email: editParticipantEmail };
+    const updatedCampaign = {
+      ...selectedCampaign,
+      participants: updatedParticipants,
+    };
+    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    setSelectedCampaign(updatedCampaign);
+    setEditingParticipantIdx(null);
+    setEditParticipantName("");
+    setEditParticipantEmail("");
   };
 
   const handleSaveNewItem = () => {
@@ -1191,14 +1241,27 @@ export default function App() {
             <h3>Owners</h3>
             <div className="settings-list">
               {selectedCampaign.owners.map((owner, idx) => (
-                <div key={idx} className="list-item">
+                <div key={idx} className="list-item" style={{ display: editingOwnerIdx === idx ? "none" : "flex" }}>
                   <div>
                     <div style={{ fontWeight: "600", color: "#d4af37" }}>{typeof owner === 'object' ? owner.name : owner}</div>
                     <div style={{ fontSize: "12px", color: "#b0b0b0" }}>{typeof owner === 'object' ? owner.email : ''}</div>
                   </div>
-                  <button onClick={() => handleRemoveOwner(idx)} className="btn-small btn-danger">Remove</button>
+                  <div style={{ display: "flex", gap: "5px" }}>
+                    <button onClick={() => handleEditOwner(idx)} className="btn-small">Edit</button>
+                    <button onClick={() => handleRemoveOwner(idx)} className="btn-small btn-danger">Remove</button>
+                  </div>
                 </div>
               ))}
+              {editingOwnerIdx !== null && (
+                <div style={{ padding: "12px", background: "#3a4a3a", borderRadius: "4px", marginBottom: "10px" }}>
+                  <input type="text" placeholder="Owner name" value={editOwnerName} onChange={e => setEditOwnerName(e.target.value)} className="input-field" style={{ marginBottom: "10px" }} />
+                  <input type="email" placeholder="Owner email" value={editOwnerEmail} onChange={e => setEditOwnerEmail(e.target.value)} className="input-field" style={{ marginBottom: "10px" }} />
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button onClick={handleSaveOwner} className="btn-primary" style={{ flex: 1 }}>Save</button>
+                    <button onClick={() => setEditingOwnerIdx(null)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
               <input type="text" placeholder="Owner name" value={newOwnerName} onChange={e => setNewOwnerName(e.target.value)} className="input-field" style={{ flex: 1 }} />
@@ -1209,14 +1272,27 @@ export default function App() {
             <h3 style={{ marginTop: "20px" }}>Participants</h3>
             <div className="settings-list">
               {selectedCampaign.participants.map((p, idx) => (
-                <div key={idx} className="list-item">
+                <div key={idx} className="list-item" style={{ display: editingParticipantIdx === idx ? "none" : "flex" }}>
                   <div>
                     <div style={{ fontWeight: "600", color: "#d4af37" }}>{typeof p === 'object' ? p.name : p}</div>
                     <div style={{ fontSize: "12px", color: "#b0b0b0" }}>{typeof p === 'object' ? p.email : ''}</div>
                   </div>
-                  <button onClick={() => handleRemoveParticipant(idx)} className="btn-small btn-danger">Remove</button>
+                  <div style={{ display: "flex", gap: "5px" }}>
+                    <button onClick={() => handleEditParticipant(idx)} className="btn-small">Edit</button>
+                    <button onClick={() => handleRemoveParticipant(idx)} className="btn-small btn-danger">Remove</button>
+                  </div>
                 </div>
               ))}
+              {editingParticipantIdx !== null && (
+                <div style={{ padding: "12px", background: "#3a4a3a", borderRadius: "4px", marginBottom: "10px" }}>
+                  <input type="text" placeholder="Participant name" value={editParticipantName} onChange={e => setEditParticipantName(e.target.value)} className="input-field" style={{ marginBottom: "10px" }} />
+                  <input type="email" placeholder="Participant email" value={editParticipantEmail} onChange={e => setEditParticipantEmail(e.target.value)} className="input-field" style={{ marginBottom: "10px" }} />
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button onClick={handleSaveParticipant} className="btn-primary" style={{ flex: 1 }}>Save</button>
+                    <button onClick={() => setEditingParticipantIdx(null)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
               <input type="text" placeholder="Participant name" value={newParticipantName} onChange={e => setNewParticipantName(e.target.value)} className="input-field" style={{ flex: 1 }} />
