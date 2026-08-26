@@ -57,9 +57,21 @@ export async function saveCampaignToSheet(campaign) {
     url.searchParams.append("id", campaign.id);
     url.searchParams.append("data", JSON.stringify(campaign));
     
-    const response = await fetch(url.toString(), { method: "GET" });
-    const result = await response.json();
-    return result.success;
+    // Retry logic - try up to 3 times
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const response = await fetch(url.toString(), { method: "GET" });
+        const result = await response.json();
+        if (result.action === "save") {
+          return true;
+        }
+      } catch (error) {
+        if (attempt === 3) throw error;
+        // Wait before retrying (exponential backoff: 500ms, 1000ms)
+        await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+      }
+    }
+    return false;
   } catch (error) {
     console.error("Error syncing:", error);
     return false;
