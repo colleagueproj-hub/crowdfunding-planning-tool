@@ -1,5 +1,5 @@
 const HARDCODED_SHEET_ID = "19Qir2g-4lZBJWuMvWudybqkIemqZxkeghEFfZsjJpfE";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwX2cBvl8FDqu7_MftlIPEYCjfBW2GPdjEhvO4p7UR0fO2NVFn1ZHRTILnNvbWRyiDq4A/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxeai5uzPe5yqWQV8H_-SSbvem6ERuWN29VGxYznerzGu0vKjenAAu1pNj_wHTLIsVmcw/exec";
 
 export async function loginUser(email, password, name, isSignUp) {
   try {
@@ -73,26 +73,26 @@ export function getDefaultSheetId() {
 export async function fetchNotifications(userEmail) {
   try {
     const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "read_notifications");
+    url.searchParams.append("action", "fetch_notifications");
+    url.searchParams.append("email", userEmail);
     
     const response = await fetch(url.toString(), { method: "GET" });
     if (!response.ok) throw new Error("Failed to fetch notifications");
-    const allNotifications = await response.json();
+    const result = await response.json();
     
-    // Filter for current user's notifications
-    const userNotifications = allNotifications.filter(n => n.email === userEmail && !n.dismissed);
-    return userNotifications;
+    return Array.isArray(result) ? result : [];
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return [];
   }
 }
 
-export async function dismissNotification(notifId) {
+export async function dismissNotification(userEmail, taskName) {
   try {
     const url = new URL(APPS_SCRIPT_URL);
     url.searchParams.append("action", "dismiss_notification");
-    url.searchParams.append("notifId", notifId);
+    url.searchParams.append("email", userEmail);
+    url.searchParams.append("task", taskName);
     
     const response = await fetch(url.toString(), { method: "GET" });
     const result = await response.json();
