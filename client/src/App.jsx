@@ -347,7 +347,16 @@ export default function App() {
 
   const handleEditItem = (item) => {
     if (!canEdit) return;
-    setNewItemForm(item);
+    setNewItemForm({
+      name: item.name,
+      startDate: item.startDate,
+      endDate: item.endDate,
+      status: item.status,
+      owners: item.owners || [],
+      participants: item.participants || [],
+      reminderEnabled: item.reminderEnabled || false,
+      reminderDays: item.reminderDays || 1,
+    });
     setEditingItemId(item.id);
     setShowAddItemModal(true);
   };
@@ -667,8 +676,8 @@ export default function App() {
                   <td>{item.startDate}</td>
                   <td>{item.endDate}</td>
                   <td><span className={`badge status-${item.status}`}>{item.status}</span></td>
-                  <td>{item.owners.join(", ") || "-"}</td>
-                  <td>{item.participants.join(", ") || "-"}</td>
+                  <td>{(Array.isArray(item.owners) ? item.owners.map(o => typeof o === 'object' ? o.name : o).join(", ") : "-") || "-"}</td>
+                  <td>{(Array.isArray(item.participants) ? item.participants.map(p => typeof p === 'object' ? p.name : p).join(", ") : "-") || "-"}</td>
                   <td>
                     {item.reminderEnabled ? (
                       <span className="badge reminder-enabled">🔔 {item.reminderDays}d</span>
@@ -821,9 +830,13 @@ export default function App() {
                   {selectedCampaign.owners.map((owner, idx) => {
                     const ownerEmail = typeof owner === 'object' ? owner.email : owner;
                     const ownerName = typeof owner === 'object' ? owner.name : owner;
-                    const isChecked = newItemForm.owners.some(o => (typeof o === 'object' ? o.email : o) === ownerEmail);
+                    const isChecked = newItemForm.owners.some(o => {
+                      const oEmail = typeof o === 'object' ? o.email : o;
+                      const oName = typeof o === 'object' ? o.name : o;
+                      return (ownerEmail && oEmail === ownerEmail) || oName === ownerName;
+                    });
                     return (
-                      <label key={ownerEmail} className="checkbox-label">
+                      <label key={ownerEmail || ownerName} className="checkbox-label">
                         <input 
                           type="checkbox" 
                           checked={isChecked}
@@ -831,7 +844,11 @@ export default function App() {
                             if (e.target.checked) {
                               setNewItemForm({...newItemForm, owners: [...newItemForm.owners, owner]});
                             } else {
-                              setNewItemForm({...newItemForm, owners: newItemForm.owners.filter(o => (typeof o === 'object' ? o.email : o) !== ownerEmail)});
+                              setNewItemForm({...newItemForm, owners: newItemForm.owners.filter(o => {
+                                const oEmail = typeof o === 'object' ? o.email : o;
+                                const oName = typeof o === 'object' ? o.name : o;
+                                return !((ownerEmail && oEmail === ownerEmail) || oName === ownerName);
+                              })});
                             }
                           }}
                         />
@@ -846,9 +863,13 @@ export default function App() {
                   {selectedCampaign.participants.map((p, idx) => {
                     const participantEmail = typeof p === 'object' ? p.email : p;
                     const participantName = typeof p === 'object' ? p.name : p;
-                    const isChecked = newItemForm.participants.some(x => (typeof x === 'object' ? x.email : x) === participantEmail);
+                    const isChecked = newItemForm.participants.some(x => {
+                      const xEmail = typeof x === 'object' ? x.email : x;
+                      const xName = typeof x === 'object' ? x.name : x;
+                      return (participantEmail && xEmail === participantEmail) || xName === participantName;
+                    });
                     return (
-                      <label key={participantEmail} className="checkbox-label">
+                      <label key={participantEmail || participantName} className="checkbox-label">
                         <input 
                           type="checkbox" 
                           checked={isChecked}
@@ -856,7 +877,11 @@ export default function App() {
                             if (e.target.checked) {
                               setNewItemForm({...newItemForm, participants: [...newItemForm.participants, p]});
                             } else {
-                              setNewItemForm({...newItemForm, participants: newItemForm.participants.filter(x => (typeof x === 'object' ? x.email : x) !== participantEmail)});
+                              setNewItemForm({...newItemForm, participants: newItemForm.participants.filter(x => {
+                                const xEmail = typeof x === 'object' ? x.email : x;
+                                const xName = typeof x === 'object' ? x.name : x;
+                                return !((participantEmail && xEmail === participantEmail) || xName === participantName);
+                              })});
                             }
                           }}
                         />
