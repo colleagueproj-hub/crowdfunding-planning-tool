@@ -818,22 +818,52 @@ export default function App() {
 
                 <label>Owners:</label>
                 <div className="checkbox-group">
-                  {selectedCampaign.owners.map(owner => (
-                    <label key={owner} className="checkbox-label">
-                      <input type="checkbox" checked={newItemForm.owners.includes(owner)} onChange={e => { if (e.target.checked) { setNewItemForm({...newItemForm, owners: [...newItemForm.owners, owner]}); } else { setNewItemForm({...newItemForm, owners: newItemForm.owners.filter(o => o !== owner)}); } }} />
-                      {owner}
-                    </label>
-                  ))}
+                  {selectedCampaign.owners.map((owner, idx) => {
+                    const ownerEmail = typeof owner === 'object' ? owner.email : owner;
+                    const ownerName = typeof owner === 'object' ? owner.name : owner;
+                    const isChecked = newItemForm.owners.some(o => (typeof o === 'object' ? o.email : o) === ownerEmail);
+                    return (
+                      <label key={ownerEmail} className="checkbox-label">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setNewItemForm({...newItemForm, owners: [...newItemForm.owners, owner]});
+                            } else {
+                              setNewItemForm({...newItemForm, owners: newItemForm.owners.filter(o => (typeof o === 'object' ? o.email : o) !== ownerEmail)});
+                            }
+                          }}
+                        />
+                        {ownerName}
+                      </label>
+                    );
+                  })}
                 </div>
 
                 <label>Participants:</label>
                 <div className="checkbox-group">
-                  {selectedCampaign.participants.map(p => (
-                    <label key={p} className="checkbox-label">
-                      <input type="checkbox" checked={newItemForm.participants.includes(p)} onChange={e => { if (e.target.checked) { setNewItemForm({...newItemForm, participants: [...newItemForm.participants, p]}); } else { setNewItemForm({...newItemForm, participants: newItemForm.participants.filter(x => x !== p)}); } }} />
-                      {p}
-                    </label>
-                  ))}
+                  {selectedCampaign.participants.map((p, idx) => {
+                    const participantEmail = typeof p === 'object' ? p.email : p;
+                    const participantName = typeof p === 'object' ? p.name : p;
+                    const isChecked = newItemForm.participants.some(x => (typeof x === 'object' ? x.email : x) === participantEmail);
+                    return (
+                      <label key={participantEmail} className="checkbox-label">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setNewItemForm({...newItemForm, participants: [...newItemForm.participants, p]});
+                            } else {
+                              setNewItemForm({...newItemForm, participants: newItemForm.participants.filter(x => (typeof x === 'object' ? x.email : x) !== participantEmail)});
+                            }
+                          }}
+                        />
+                        {participantName}
+                      </label>
+                    );
+                  })}
                 </div>
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>🔔 Reminder</label>
