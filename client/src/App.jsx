@@ -590,15 +590,24 @@ export default function App() {
       {/* Notifications Banner */}
       {notifications.length > 0 && (
         <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={() => setNotifications([])}>
-          <div className="modal" style={{ maxWidth: "500px" }} onClick={e => e.stopPropagation()}>
+          <div className="modal" style={{ maxWidth: "600px" }} onClick={e => e.stopPropagation()}>
             <h2 style={{ color: "#d4af37", marginBottom: "20px" }}>🔔 Reminder</h2>
             {notifications.map(notif => (
-              <div key={`${notif.email}_${notif.task}`} style={{ marginBottom: "20px" }}>
-                <p style={{ margin: "10px 0", fontSize: "15px", color: "#ffffff" }}>
-                  <strong>{notif.message}</strong>
+              <div key={`${notif.email}_${notif.task}`} style={{ marginBottom: "20px", padding: "15px", background: "#3a3a3a", borderRadius: "6px", borderLeft: "4px solid #d4af37" }}>
+                <p style={{ margin: "10px 0", fontSize: "16px", color: "#ffffff", fontWeight: "600" }}>
+                  📋 {notif.task}
                 </p>
                 <p style={{ margin: "10px 0", fontSize: "13px", color: "#e0e0e0" }}>
-                  Task: {notif.task}
+                  <strong>Owners:</strong> {notif.owners || "N/A"}
+                </p>
+                <p style={{ margin: "10px 0", fontSize: "13px", color: "#e0e0e0" }}>
+                  <strong>Participants:</strong> {notif.participants || "N/A"}
+                </p>
+                <p style={{ margin: "10px 0", fontSize: "13px", color: "#e0e0e0" }}>
+                  <strong>Start Date:</strong> {notif.startDate || "N/A"}
+                </p>
+                <p style={{ margin: "10px 0", fontSize: "13px", color: "#e0e0e0" }}>
+                  <strong>End Date:</strong> {notif.endDate || "N/A"}
                 </p>
               </div>
             ))}
