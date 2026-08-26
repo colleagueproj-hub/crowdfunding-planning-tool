@@ -49,6 +49,17 @@ export default function App() {
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [shownNotifications, setShownNotifications] = useState(new Set());
+
+  const getDismissedNotifications = () => {
+    const dismissed = localStorage.getItem("dismissed_notifications");
+    return dismissed ? new Set(JSON.parse(dismissed)) : new Set();
+  };
+
+  const dismissNotificationPermanently = (email, task) => {
+    const dismissed = getDismissedNotifications();
+    dismissed.add(`${email}_${task}`);
+    localStorage.setItem("dismissed_notifications", JSON.stringify(Array.from(dismissed)));
+  };
   const [newOwnerEmail, setNewOwnerEmail] = useState("");
   const [newParticipantEmail, setNewParticipantEmail] = useState("");
   const [editingOwnerIdx, setEditingOwnerIdx] = useState(null);
@@ -71,8 +82,10 @@ export default function App() {
   const loadNotifications = async () => {
     if (user && user.email) {
       const notifs = await fetchNotifications(user.email);
-      // Only show notifications that haven't been shown yet
-      const newNotifs = notifs.filter(n => !shownNotifications.has(`${n.email}_${n.task}`));
+      const dismissed = getDismissedNotifications();
+      
+      // Filter out dismissed notifications
+      const newNotifs = notifs.filter(n => !dismissed.has(`${n.email}_${n.task}`));
       
       if (newNotifs.length > 0) {
         setNotifications(newNotifs);
@@ -591,8 +604,9 @@ export default function App() {
             ))}
             <button
               onClick={() => {
-                // Dismiss all notifications and clear
+                // Dismiss all notifications and save to localStorage
                 notifications.forEach(notif => {
+                  dismissNotificationPermanently(notif.email, notif.task);
                   dismissNotification(notif.email, notif.task);
                 });
                 setNotifications([]);
