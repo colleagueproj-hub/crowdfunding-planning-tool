@@ -68,7 +68,9 @@ export default function App() {
 
   const loadCampaigns = async () => {
     const loaded = await fetchCampaignsFromSheet(getDefaultSheetId());
+    console.log("Loaded campaigns:", loaded);
     const normalized = (Array.isArray(loaded) ? loaded : []).map(normalizeCampaign);
+    console.log("Normalized campaigns:", normalized);
     setCampaigns(normalized);
     if (normalized.length > 0 && !selectedCampaign) {
       setSelectedCampaign(normalized[0]);
