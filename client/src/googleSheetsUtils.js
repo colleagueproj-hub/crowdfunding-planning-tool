@@ -33,7 +33,10 @@ export function logoutUser() {
 
 export async function fetchCampaignsFromSheet() {
   try {
-    const response = await fetch(APPS_SCRIPT_URL, { method: "GET" });
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "read");
+    
+    const response = await fetch(url.toString(), { method: "GET" });
     if (!response.ok) throw new Error("Failed to fetch");
     const result = await response.json();
     
