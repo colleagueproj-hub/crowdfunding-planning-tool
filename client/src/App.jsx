@@ -587,9 +587,6 @@ export default function App() {
                 <p style={{ margin: "10px 0", fontSize: "13px", color: "#e0e0e0" }}>
                   Task: {notif.task}
                 </p>
-                <p style={{ margin: "10px 0", fontSize: "13px", color: "#b0b0b0" }}>
-                  Received: {new Date(notif.timestamp).toLocaleString()}
-                </p>
               </div>
             ))}
             <button
