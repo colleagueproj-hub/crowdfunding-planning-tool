@@ -245,6 +245,13 @@ export default function App() {
     setEditOwnerEmail("");
   };
 
+  const handleEditParticipant = (index) => {
+    const participant = selectedCampaign.participants[index];
+    setEditingParticipantIdx(index);
+    setEditParticipantName(typeof participant === 'object' ? participant.name : participant);
+    setEditParticipantEmail(typeof participant === 'object' ? participant.email : '');
+  };
+
   const handleSaveParticipant = () => {
     if (editingParticipantIdx === null || !editParticipantName.trim() || !editParticipantEmail.trim()) return;
     const updatedParticipants = [...selectedCampaign.participants];
