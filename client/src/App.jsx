@@ -48,6 +48,7 @@ export default function App() {
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [shownNotifications, setShownNotifications] = useState(new Set());
   const [newOwnerEmail, setNewOwnerEmail] = useState("");
   const [newParticipantEmail, setNewParticipantEmail] = useState("");
   const [editingOwnerIdx, setEditingOwnerIdx] = useState(null);
@@ -70,7 +71,16 @@ export default function App() {
   const loadNotifications = async () => {
     if (user && user.email) {
       const notifs = await fetchNotifications(user.email);
-      setNotifications(notifs);
+      // Only show notifications that haven't been shown yet
+      const newNotifs = notifs.filter(n => !shownNotifications.has(`${n.email}_${n.task}`));
+      
+      if (newNotifs.length > 0) {
+        setNotifications(newNotifs);
+        // Mark these as shown
+        const updatedShown = new Set(shownNotifications);
+        newNotifs.forEach(n => updatedShown.add(`${n.email}_${n.task}`));
+        setShownNotifications(updatedShown);
+      }
     }
   };
 
@@ -566,53 +576,39 @@ export default function App() {
 
       {/* Notifications Banner */}
       {notifications.length > 0 && (
-        <div style={{ marginBottom: "20px" }}>
-          {notifications.map(notif => (
-            <div
-              key={notif.id}
-              style={{
-                background: "#3a5a3a",
-                border: "2px solid #d4af37",
-                borderRadius: "8px",
-                padding: "15px",
-                marginBottom: "10px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                color: "#ffffff"
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: "0 0 5px 0", fontWeight: "600", color: "#d4af37", fontSize: "14px" }}>
-                  📧 {notif.message}
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal" style={{ maxWidth: "500px" }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ color: "#d4af37", marginBottom: "20px" }}>🔔 Reminder</h2>
+            {notifications.map(notif => (
+              <div key={`${notif.email}_${notif.task}`} style={{ marginBottom: "20px" }}>
+                <p style={{ margin: "10px 0", fontSize: "15px", color: "#ffffff" }}>
+                  <strong>{notif.message}</strong>
                 </p>
-                <p style={{ margin: "5px 0", fontSize: "13px", color: "#e0e0e0" }}>
-                  Campaign: <strong>{notif.campaignName}</strong> • Starts: {notif.startDate}
+                <p style={{ margin: "10px 0", fontSize: "13px", color: "#e0e0e0" }}>
+                  Task: {notif.task}
+                </p>
+                <p style={{ margin: "10px 0", fontSize: "13px", color: "#b0b0b0" }}>
+                  Received: {new Date(notif.timestamp).toLocaleString()}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  dismissNotification(notif.id);
-                  setNotifications(notifications.filter(n => n.id !== notif.id));
-                }}
-                style={{
-                  background: "transparent",
-                  border: "1px solid #d4af37",
-                  color: "#d4af37",
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  marginLeft: "15px",
-                  fontSize: "12px",
-                  fontWeight: "600"
-                }}
-              >
-                Dismiss
-              </button>
-            </div>
-          ))}
+            ))}
+            <button
+              onClick={async () => {
+                // Dismiss all notifications
+                for (const notif of notifications) {
+                  await dismissNotification(notif.email, notif.task);
+                }
+                setNotifications([]);
+              }}
+              className="btn-primary"
+              style={{ width: "100%" }}
+            >
+              Got it, thanks!
+            </button>
+          </div>
         </div>
       )}
+
 
       <div className="tabs">
         <button className={`tab ${activeTab === "plan" ? "active" : ""}`} onClick={() => setActiveTab("plan")}>
