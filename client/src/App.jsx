@@ -576,7 +576,7 @@ export default function App() {
 
       {/* Notifications Banner */}
       {notifications.length > 0 && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={() => setNotifications([])}>
           <div className="modal" style={{ maxWidth: "500px" }} onClick={e => e.stopPropagation()}>
             <h2 style={{ color: "#d4af37", marginBottom: "20px" }}>🔔 Reminder</h2>
             {notifications.map(notif => (
@@ -593,11 +593,11 @@ export default function App() {
               </div>
             ))}
             <button
-              onClick={async () => {
-                // Dismiss all notifications
-                for (const notif of notifications) {
-                  await dismissNotification(notif.email, notif.task);
-                }
+              onClick={() => {
+                // Dismiss all notifications and clear
+                notifications.forEach(notif => {
+                  dismissNotification(notif.email, notif.task);
+                });
                 setNotifications([]);
               }}
               className="btn-primary"
