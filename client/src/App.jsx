@@ -1044,6 +1044,12 @@ export default function App() {
                         }
                         
                         const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
+                        
+                        // Define colors for different tasks (rotates through colors)
+                        const taskColors = [
+                          "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", 
+                          "#F7DC6F", "#BB8FCE", "#85C1E2", "#F8B88B", "#52C4A1"
+                        ];
 
                         return (
                           <>
@@ -1069,8 +1075,49 @@ export default function App() {
                               })}
                             </div>
 
+                            {/* Date Numbers Row */}
+                            <div style={{ display: "flex", marginBottom: "10px", fontSize: "11px", color: "#b0b0b0", paddingLeft: "200px", fontWeight: "400" }}>
+                              {monthGroups.map((month, monthIdx) => {
+                                const monthWidth = (month.daysInRange / totalDays) * 100;
+                                const daysInThisMonth = month.daysInRange;
+                                const dayWidth = 100 / daysInThisMonth;
+                                
+                                return (
+                                  <div 
+                                    key={monthIdx} 
+                                    style={{ 
+                                      width: `${monthWidth}%`,
+                                      display: "flex",
+                                      borderRight: "2px solid #505050"
+                                    }}
+                                  >
+                                    {Array.from({ length: daysInThisMonth }).map((_, dayIdx) => {
+                                      const currentDay = new Date(month.startDate);
+                                      currentDay.setDate(currentDay.getDate() + dayIdx);
+                                      const dayOfMonth = currentDay.getDate();
+                                      
+                                      return (
+                                        <div
+                                          key={dayIdx}
+                                          style={{
+                                            width: `${dayWidth}%`,
+                                            textAlign: "center",
+                                            padding: "3px 0",
+                                            borderRight: "1px solid #404040",
+                                            fontSize: "10px"
+                                          }}
+                                        >
+                                          {dayOfMonth}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
                             {/* Gantt Bars */}
-                            {selectedCampaign.planningItems.map((item) => {
+                            {selectedCampaign.planningItems.map((item, itemIdx) => {
                               const startDate = parseDate(item.startDate);
                               const endDate = parseDate(item.endDate);
                               
@@ -1080,6 +1127,9 @@ export default function App() {
                               
                               const barStartPercent = (daysFromStart / totalDays) * 100;
                               const barWidthPercent = (durationDays / totalDays) * 100;
+                              
+                              // Get color for this task based on index
+                              const taskColor = taskColors[itemIdx % taskColors.length];
 
                               return (
                                 <div key={item.id} style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}>
@@ -1112,7 +1162,7 @@ export default function App() {
                                           left: `${barStartPercent}%`,
                                           width: `${Math.min(barWidthPercent, 100 - barStartPercent)}%`,
                                           height: "30px",
-                                          background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? "#d4af37" : "#6a6a6a",
+                                          background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? taskColor : "#6a6a6a",
                                           borderRadius: "4px",
                                           display: "flex",
                                           alignItems: "center",
@@ -1120,9 +1170,10 @@ export default function App() {
                                           color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
                                           fontSize: "11px",
                                           fontWeight: "600",
-                                          border: "1px solid #707070",
+                                          border: `2px solid ${taskColor}`,
                                           minWidth: "40px",
-                                          overflow: "hidden"
+                                          overflow: "hidden",
+                                          boxShadow: `0 0 8px ${taskColor}40`
                                         }}
                                       >
                                         {durationDays}d
