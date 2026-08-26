@@ -218,14 +218,17 @@ export default function App() {
     const updatedOwners = [...selectedCampaign.owners];
     const oldOwner = updatedOwners[editingOwnerIdx];
     const oldEmail = typeof oldOwner === 'object' ? oldOwner.email : '';
+    const oldName = typeof oldOwner === 'object' ? oldOwner.name : oldOwner;
     
     updatedOwners[editingOwnerIdx] = { name: editOwnerName, email: editOwnerEmail };
     
-    // Update matching participant if exists
+    // Update matching participant if exists (match by email or name if no email)
     let updatedParticipants = [...selectedCampaign.participants];
-    const participantIdx = updatedParticipants.findIndex(p => 
-      (typeof p === 'object' ? p.email : '') === oldEmail
-    );
+    const participantIdx = updatedParticipants.findIndex(p => {
+      const pEmail = typeof p === 'object' ? p.email : '';
+      const pName = typeof p === 'object' ? p.name : p;
+      return (oldEmail && pEmail === oldEmail) || (pName === oldName);
+    });
     if (participantIdx !== -1) {
       updatedParticipants[participantIdx] = { name: editOwnerName, email: editOwnerEmail };
     }
@@ -247,14 +250,17 @@ export default function App() {
     const updatedParticipants = [...selectedCampaign.participants];
     const oldParticipant = updatedParticipants[editingParticipantIdx];
     const oldEmail = typeof oldParticipant === 'object' ? oldParticipant.email : '';
+    const oldName = typeof oldParticipant === 'object' ? oldParticipant.name : oldParticipant;
     
     updatedParticipants[editingParticipantIdx] = { name: editParticipantName, email: editParticipantEmail };
     
-    // Update matching owner if exists
+    // Update matching owner if exists (match by email or name if no email)
     let updatedOwners = [...selectedCampaign.owners];
-    const ownerIdx = updatedOwners.findIndex(o => 
-      (typeof o === 'object' ? o.email : '') === oldEmail
-    );
+    const ownerIdx = updatedOwners.findIndex(o => {
+      const oEmail = typeof o === 'object' ? o.email : '';
+      const oName = typeof o === 'object' ? o.name : o;
+      return (oldEmail && oEmail === oldEmail) || (oName === oldName);
+    });
     if (ownerIdx !== -1) {
       updatedOwners[ownerIdx] = { name: editParticipantName, email: editParticipantEmail };
     }
