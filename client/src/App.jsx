@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./styles.css";
 import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
-import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification } from "./googleSheetsUtils";
+import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL } from "./googleSheetsUtils";
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -49,6 +49,8 @@ export default function App() {
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [shownNotifications, setShownNotifications] = useState(new Set());
+  const [allUsers, setAllUsers] = useState([]);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const getDismissedNotifications = () => {
     const dismissed = localStorage.getItem("dismissed_notifications");
@@ -108,6 +110,17 @@ export default function App() {
     }
   };
 
+  const loadAllUsers = async () => {
+    if (!isAdmin) return;
+    try {
+      const response = await fetch(`${APPS_SCRIPT_URL}?action=get_all_users`);
+      const users = await response.json();
+      setAllUsers(Array.isArray(users) ? users : []);
+    } catch (error) {
+      console.error("Error loading users:", error);
+    }
+  };
+
   const normalizeCampaign = (campaign) => ({
     id: campaign.id || `campaign_${Date.now()}`,
     name: campaign.name || "Untitled Campaign",
@@ -120,9 +133,13 @@ export default function App() {
     created_at: campaign.created_at || new Date().toISOString(),
   });
 
-  const isOwner = selectedCampaign && selectedCampaign.owners.includes(user?.email);
+  const isOwner = selectedCampaign && selectedCampaign.owners.some(o => {
+    const ownerEmail = typeof o === 'object' ? o.email : o;
+    return ownerEmail === user?.email;
+  });
   const canEdit = isOwner || user?.is_admin;
   const canCreateCampaign = user?.is_admin;
+  const isAdmin = user?.is_admin && user?.email === "colleagueproj@gmail.com";
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
