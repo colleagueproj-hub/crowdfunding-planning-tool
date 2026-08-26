@@ -48,6 +48,8 @@ export default function App() {
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [newOwnerEmail, setNewOwnerEmail] = useState("");
+  const [newParticipantEmail, setNewParticipantEmail] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -149,18 +151,20 @@ export default function App() {
   };
 
   const handleAddOwner = () => {
-    if (!selectedCampaign || !newOwnerName.trim() || !canEdit) return;
+    if (!selectedCampaign || !newOwnerName.trim() || !newOwnerEmail.trim() || !canEdit) return;
+    const ownerObj = { name: newOwnerName, email: newOwnerEmail };
     const updatedCampaign = {
       ...selectedCampaign,
-      owners: [...selectedCampaign.owners, newOwnerName],
+      owners: [...selectedCampaign.owners, ownerObj],
       // Automatically add to participants if not already there
-      participants: selectedCampaign.participants.includes(newOwnerName) 
+      participants: selectedCampaign.participants.some(p => p.email === newOwnerEmail) 
         ? selectedCampaign.participants 
-        : [...selectedCampaign.participants, newOwnerName],
+        : [...selectedCampaign.participants, ownerObj],
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
     setNewOwnerName("");
+    setNewOwnerEmail("");
   };
 
   const handleRemoveOwner = (index) => {
@@ -174,14 +178,16 @@ export default function App() {
   };
 
   const handleAddParticipant = () => {
-    if (!selectedCampaign || !newParticipantName.trim() || !canEdit) return;
+    if (!selectedCampaign || !newParticipantName.trim() || !newParticipantEmail.trim() || !canEdit) return;
+    const participantObj = { name: newParticipantName, email: newParticipantEmail };
     const updatedCampaign = {
       ...selectedCampaign,
-      participants: [...selectedCampaign.participants, newParticipantName],
+      participants: [...selectedCampaign.participants, participantObj],
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
     setNewParticipantName("");
+    setNewParticipantEmail("");
   };
 
   const handleRemoveParticipant = (index) => {
@@ -1186,25 +1192,37 @@ export default function App() {
             <div className="settings-list">
               {selectedCampaign.owners.map((owner, idx) => (
                 <div key={idx} className="list-item">
-                  {owner} {owner === user.email && <span style={{ fontSize: "12px", color: "#999" }}>(you)</span>}
+                  <div>
+                    <div style={{ fontWeight: "600", color: "#d4af37" }}>{typeof owner === 'object' ? owner.name : owner}</div>
+                    <div style={{ fontSize: "12px", color: "#b0b0b0" }}>{typeof owner === 'object' ? owner.email : ''}</div>
+                  </div>
                   <button onClick={() => handleRemoveOwner(idx)} className="btn-small btn-danger">Remove</button>
                 </div>
               ))}
             </div>
-            <input type="text" placeholder="Add new owner" value={newOwnerName} onChange={e => setNewOwnerName(e.target.value)} className="input-field" />
-            <button onClick={handleAddOwner} className="btn-primary">Add Owner</button>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+              <input type="text" placeholder="Owner name" value={newOwnerName} onChange={e => setNewOwnerName(e.target.value)} className="input-field" style={{ flex: 1 }} />
+              <input type="email" placeholder="Owner email" value={newOwnerEmail} onChange={e => setNewOwnerEmail(e.target.value)} className="input-field" style={{ flex: 1 }} />
+            </div>
+            <button onClick={handleAddOwner} className="btn-primary" style={{ width: "100%" }}>Add Owner</button>
 
             <h3 style={{ marginTop: "20px" }}>Participants</h3>
             <div className="settings-list">
               {selectedCampaign.participants.map((p, idx) => (
                 <div key={idx} className="list-item">
-                  {p}
+                  <div>
+                    <div style={{ fontWeight: "600", color: "#d4af37" }}>{typeof p === 'object' ? p.name : p}</div>
+                    <div style={{ fontSize: "12px", color: "#b0b0b0" }}>{typeof p === 'object' ? p.email : ''}</div>
+                  </div>
                   <button onClick={() => handleRemoveParticipant(idx)} className="btn-small btn-danger">Remove</button>
                 </div>
               ))}
             </div>
-            <input type="text" placeholder="Add new participant" value={newParticipantName} onChange={e => setNewParticipantName(e.target.value)} className="input-field" />
-            <button onClick={handleAddParticipant} className="btn-primary">Add Participant</button>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+              <input type="text" placeholder="Participant name" value={newParticipantName} onChange={e => setNewParticipantName(e.target.value)} className="input-field" style={{ flex: 1 }} />
+              <input type="email" placeholder="Participant email" value={newParticipantEmail} onChange={e => setNewParticipantEmail(e.target.value)} className="input-field" style={{ flex: 1 }} />
+            </div>
+            <button onClick={handleAddParticipant} className="btn-primary" style={{ width: "100%" }}>Add Participant</button>
 
             <div className="modal-buttons" style={{ marginTop: "20px" }}>
               <button onClick={() => setShowCampaignSettings(false)} className="btn-primary">Close</button>
