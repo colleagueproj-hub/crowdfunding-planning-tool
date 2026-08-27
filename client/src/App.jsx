@@ -567,23 +567,33 @@ export default function App() {
     };
 
     console.log("Updated budgetItems:", updatedCampaign.budgetItems);
+    console.log("About to save campaign to sheet...");
 
-    // Save to backend FIRST
-    const success = await saveCampaignToSheet(updatedCampaign);
-    console.log("Save result:", success);
-    
-    if (success) {
-      // Update local state after successful backend save
-      setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
-      setSelectedCampaign(updatedCampaign);
-    } else {
-      alert("Failed to save. Please try again.");
+    try {
+      // Save to backend FIRST
+      const success = await saveCampaignToSheet(updatedCampaign);
+      console.log("Save result:", success);
+      
+      if (success) {
+        // Update local state after successful backend save
+        setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+        setSelectedCampaign(updatedCampaign);
+        console.log("State updated successfully");
+      } else {
+        console.log("Save returned false");
+        alert("Failed to save. Please try again.");
+        return;
+      }
+    } catch (error) {
+      console.error("Error saving:", error);
+      alert("Error: " + error.message);
       return;
     }
     
     setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
     setEditingItemId(null);
     setShowAddBudgetModal(false);
+    console.log("Modal closed and form reset");
   };
 
   const handleEditBudgetItem = (item) => {
