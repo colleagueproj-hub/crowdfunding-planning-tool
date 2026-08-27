@@ -416,7 +416,7 @@ export default function App() {
     setEditParticipantEmail("");
   };
 
-  const handleSaveNewItem = () => {
+  const handleSaveNewItem = async () => {
     if (!selectedCampaign || !newItemForm.name.trim() || !newItemForm.startDate || !newItemForm.endDate || !canEdit) return;
     
     // Validate: end date must not be before start date
@@ -463,6 +463,10 @@ export default function App() {
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+    
+    // Save to backend
+    await saveCampaignToSheet(updatedCampaign);
+    
     setNewItemForm({
       name: "",
       startDate: "",
@@ -493,7 +497,7 @@ export default function App() {
     setShowAddItemModal(true);
   };
 
-  const handleDeleteItem = (itemId) => {
+  const handleDeleteItem = async (itemId) => {
     if (!selectedCampaign || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
@@ -501,6 +505,9 @@ export default function App() {
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+    
+    // Save to backend
+    await saveCampaignToSheet(updatedCampaign);
   };
 
   const handleAddBudgetItem = async () => {
