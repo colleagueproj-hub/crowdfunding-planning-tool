@@ -1385,12 +1385,30 @@ export default function App() {
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Gift Owner(s):</label>
                 <div className="checkbox-group">
-                  {selectedCampaign.participants.map(p => (
-                    <label key={p} className="checkbox-label">
-                      <input type="checkbox" checked={newGiftItem.owners.includes(p)} onChange={e => { if (e.target.checked) { setNewGiftItem({...newGiftItem, owners: [...newGiftItem.owners, p]}); } else { setNewGiftItem({...newGiftItem, owners: newGiftItem.owners.filter(x => x !== p)}); } }} />
-                      {p}
-                    </label>
-                  ))}
+                  {selectedCampaign.participants.map((p, idx) => {
+                    const participantEmail = typeof p === 'object' ? p.email : p;
+                    const participantName = typeof p === 'object' ? p.name : p;
+                    const isChecked = newGiftItem.owners.some(o => (typeof o === 'object' ? o.email : o) === participantEmail);
+                    return (
+                      <label key={participantEmail || participantName} className="checkbox-label">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setNewGiftItem({...newGiftItem, owners: [...newGiftItem.owners, p]});
+                            } else {
+                              setNewGiftItem({...newGiftItem, owners: newGiftItem.owners.filter(o => {
+                                const oEmail = typeof o === 'object' ? o.email : o;
+                                return oEmail !== participantEmail;
+                              })});
+                            }
+                          }}
+                        />
+                        {participantName}
+                      </label>
+                    );
+                  })}
                 </div>
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
