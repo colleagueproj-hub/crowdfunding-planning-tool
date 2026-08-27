@@ -114,20 +114,20 @@ export default function App() {
 
   const addAlbumBudgetItems = async () => {
     const budgetItems = [
-      { id: `budget_${Date.now()}_1`, description: "נגנים", amount: 5000, category: "הקלטות סטודיו", comment: "" },
-      { id: `budget_${Date.now()}_2`, description: "חדר הקלטות", amount: 1400, category: "הקלטות סטודיו", comment: "12 X 4 ש 350 השכרה" },
-      { id: `budget_${Date.now()}_3`, description: "פיצה", amount: 10000, category: "הקלטות סטודיו", comment: "אין הוצאה עירונית" },
-      { id: `budget_${Date.now()}_4`, description: "מאסטור", amount: 7000, category: "הקלטות סטודיו", comment: "" },
-      { id: `budget_${Date.now()}_5`, description: "הקלטות", amount: 1150, category: "הקלטות ראשוניות", comment: "12 X 3 ש 350 השכרה" },
-      { id: `budget_${Date.now()}_6`, description: "חדר מיקס", amount: 700, category: "הקלטות ראשוניות", comment: "2 X 12 ש 350 השכרה" },
-      { id: `budget_${Date.now()}_7`, description: "כיסים קולי", amount: 5000, category: "הקלטות ראשוניות", comment: "RME" },
-      { id: `budget_${Date.now()}_8`, description: "חלוציות", amount: 2000, category: "חלוציות", comment: "80 חלוציות" },
-      { id: `budget_${Date.now()}_9`, description: "מדבקות", amount: 200, category: "חלוציות", comment: "" },
-      { id: `budget_${Date.now()}_10`, description: "דיסקים", amount: 1000, category: "חלוציות", comment: "100 יחידות צילום עצמי" },
-      { id: `budget_${Date.now()}_11`, description: "הדפסים", amount: 10000, category: "חלוציות", comment: "" },
-      { id: `budget_${Date.now()}_12`, description: "הצעה דיגיטלית", amount: 200, category: "חלוציות", comment: "" },
-      { id: `budget_${Date.now()}_13`, description: "שלוחה", amount: 400, category: "חלוציות", comment: "" },
-      { id: `budget_${Date.now()}_14`, description: "תמחוי להדפסת סטודיו", amount: 3000, category: "דיווח", comment: "" }
+      { id: "budget_ngnim", description: "נגנים", amount: 5000, category: "הקלטות סטודיו", comment: "" },
+      { id: "budget_cheder_haklot", description: "חדר הקלטות", amount: 1400, category: "הקלטות סטודיו", comment: "12 X 4 ש 350 השכרה" },
+      { id: "budget_pizza", description: "פיצה", amount: 10000, category: "הקלטות סטודיו", comment: "אין הוצאה עירונית" },
+      { id: "budget_mastering", description: "מאסטור", amount: 7000, category: "הקלטות סטודיו", comment: "" },
+      { id: "budget_haklot_rosh", description: "הקלטות", amount: 1150, category: "הקלטות ראשוניות", comment: "12 X 3 ש 350 השכרה" },
+      { id: "budget_cheder_mix", description: "חדר מיקס", amount: 700, category: "הקלטות ראשוניות", comment: "2 X 12 ש 350 השכרה" },
+      { id: "budget_microphone", description: "כיסים קולי", amount: 5000, category: "הקלטות ראשוניות", comment: "RME" },
+      { id: "budget_hoodies", description: "חלוציות", amount: 2000, category: "חלוציות", comment: "80 חלוציות" },
+      { id: "budget_stickers", description: "מדבקות", amount: 200, category: "חלוציות", comment: "" },
+      { id: "budget_disks", description: "דיסקים", amount: 1000, category: "חלוציות", comment: "100 יחידות צילום עצמי" },
+      { id: "budget_prints", description: "הדפסים", amount: 10000, category: "חלוציות", comment: "" },
+      { id: "budget_digital", description: "הצעה דיגיטלית", amount: 200, category: "חלוציות", comment: "" },
+      { id: "budget_shipping", description: "שלוחה", amount: 400, category: "חלוציות", comment: "" },
+      { id: "budget_tmchui", description: "תמחוי להדפסת סטודיו", amount: 3000, category: "דיווח", comment: "" }
     ];
     
     const campaign = campaigns.find(c => c.name === "Weeping Willow Tree first album and live show");
