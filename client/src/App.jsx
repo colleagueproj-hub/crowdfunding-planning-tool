@@ -511,7 +511,11 @@ export default function App() {
   };
 
   const handleAddBudgetItem = async () => {
-    if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount || !canEdit) return;
+    console.log("handleAddBudgetItem called");
+    if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount || !canEdit) {
+      console.log("Early return - selectedCampaign:", selectedCampaign, "description:", newBudgetItem.description, "amount:", newBudgetItem.amount, "canEdit:", canEdit);
+      return;
+    }
     
     // Validate: campaign must have at least 1 owner and 1 participant
     if (selectedCampaign.owners.length === 0) {
@@ -547,6 +551,8 @@ export default function App() {
     console.log("Updated campaign:", updatedCampaign);
     const success = await saveCampaignToSheet(updatedCampaign);
     console.log("Save result:", success);
+    
+    alert("Budget item " + (editingItemId ? "updated" : "added") + " successfully!");
     
     setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
     setEditingItemId(null);
