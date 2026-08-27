@@ -114,20 +114,20 @@ export default function App() {
 
   const addAlbumBudgetItems = async () => {
     const budgetItems = [
-      { id: "budget_ngnim", description: "נגנים", amount: 5000, category: "הקלטות סטודיו", comment: "" },
-      { id: "budget_cheder_haklot", description: "חדר הקלטות", amount: 1400, category: "הקלטות סטודיו", comment: "12 X 4 ש 350 השכרה" },
-      { id: "budget_pizza", description: "פיצה", amount: 10000, category: "הקלטות סטודיו", comment: "אין הוצאה עירונית" },
-      { id: "budget_mastering", description: "מאסטור", amount: 7000, category: "הקלטות סטודיו", comment: "" },
+      { id: "budget_ngnim", description: "נגנים", amount: 5000, category: "הקלטות ראשוניות", comment: "" },
+      { id: "budget_cheder_haklot", description: "חדר הקלטות", amount: 1400, category: "הקלטות ראשוניות", comment: "12 X 4 ש 350 השכרה" },
+      { id: "budget_pizza", description: "פיצה", amount: 10000, category: "הקלטות ראשוניות", comment: "אין הוצאה עירונית" },
+      { id: "budget_mastering", description: "מאסטור", amount: 7000, category: "הקלטות ראשוניות", comment: "" },
       { id: "budget_haklot_rosh", description: "הקלטות", amount: 1150, category: "הקלטות ראשוניות", comment: "12 X 3 ש 350 השכרה" },
       { id: "budget_cheder_mix", description: "חדר מיקס", amount: 700, category: "הקלטות ראשוניות", comment: "2 X 12 ש 350 השכרה" },
       { id: "budget_microphone", description: "כיסים קולי", amount: 5000, category: "הקלטות ראשוניות", comment: "RME" },
-      { id: "budget_hoodies", description: "חלוציות", amount: 2000, category: "חלוציות", comment: "80 חלוציות" },
-      { id: "budget_stickers", description: "מדבקות", amount: 200, category: "חלוציות", comment: "" },
-      { id: "budget_disks", description: "דיסקים", amount: 1000, category: "חלוציות", comment: "100 יחידות צילום עצמי" },
-      { id: "budget_prints", description: "הדפסים", amount: 10000, category: "חלוציות", comment: "" },
-      { id: "budget_digital", description: "הצעה דיגיטלית", amount: 200, category: "חלוציות", comment: "" },
-      { id: "budget_shipping", description: "שלוחה", amount: 400, category: "חלוציות", comment: "" },
-      { id: "budget_tmchui", description: "תמחוי להדפסת סטודיו", amount: 3000, category: "דיווח", comment: "" }
+      { id: "budget_hoodies", description: "חלוציות", amount: 2000, category: "מרצ'נדייז", comment: "80 חלוציות" },
+      { id: "budget_stickers", description: "מדבקות", amount: 200, category: "מרצ'נדייז", comment: "" },
+      { id: "budget_disks", description: "דיסקים", amount: 1000, category: "מרצ'נדייז", comment: "100 יחידות צילום עצמי" },
+      { id: "budget_prints", description: "הדפסים", amount: 10000, category: "מרצ'נדייז", comment: "" },
+      { id: "budget_digital", description: "הצעה דיגיטלית", amount: 200, category: "מרצ'נדייז", comment: "" },
+      { id: "budget_shipping", description: "שלוחה", amount: 400, category: "מרצ'נדייז", comment: "" },
+      { id: "budget_tmchui", description: "תמחוי להדפסת סטודיו", amount: 3000, category: "ויזואל", comment: "" }
     ];
     
     const campaign = campaigns.find(c => c.name === "Weeping Willow Tree first album and live show");
@@ -1453,10 +1453,9 @@ export default function App() {
                   <option value="live">Live</option>
                   <option value="merchandise">Merchandise</option>
                   <option value="other">Other</option>
-                  <option value="הקלטות סטודיו">הקלטות סטודיו (Studio Recordings)</option>
                   <option value="הקלטות ראשוניות">הקלטות ראשוניות (Initial Recordings)</option>
-                  <option value="חלוציות">חלוציות (Merchandise)</option>
-                  <option value="דיווח">דיווח (Reporting)</option>
+                  <option value="מרצ'נדייז">מרצ'נדייז (Merchandise)</option>
+                  <option value="ויזואל">ויזואל (Visual)</option>
                 </select>
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
                 <textarea placeholder="Add a comment (optional)" value={newBudgetItem.comment} onChange={e => setNewBudgetItem({...newBudgetItem, comment: e.target.value})} className="input-field" style={{ minHeight: "80px", fontFamily: "inherit", resize: "vertical" }} />
