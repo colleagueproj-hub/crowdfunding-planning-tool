@@ -503,7 +503,7 @@ export default function App() {
     setSelectedCampaign(updatedCampaign);
   };
 
-  const handleAddBudgetItem = () => {
+  const handleAddBudgetItem = async () => {
     if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount || !canEdit) return;
     
     // Validate: campaign must have at least 1 owner and 1 participant
@@ -534,6 +534,10 @@ export default function App() {
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+    
+    // Save to backend
+    await saveCampaignToSheet(updatedCampaign);
+    
     setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
     setEditingItemId(null);
     setShowAddBudgetModal(false);
@@ -545,7 +549,7 @@ export default function App() {
     setShowAddBudgetModal(true);
   };
 
-  const handleDeleteBudgetItem = (budgetId) => {
+  const handleDeleteBudgetItem = async (budgetId) => {
     if (!selectedCampaign || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
@@ -553,9 +557,12 @@ export default function App() {
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+    
+    // Save to backend
+    await saveCampaignToSheet(updatedCampaign);
   };
 
-  const handleAddGift = () => {
+  const handleAddGift = async () => {
     if (!selectedCampaign || !newGiftItem.name.trim() || !newGiftItem.price || !newGiftItem.cost || newGiftItem.owners.length === 0 || !canEdit) {
       alert("Please fill in all fields and select at least 1 owner");
       return;
@@ -580,6 +587,10 @@ export default function App() {
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+    
+    // Save to backend
+    await saveCampaignToSheet(updatedCampaign);
+    
     setNewGiftItem({ name: "", price: "", cost: "", owners: [], comment: "", suggestedQuantity: "" });
     setEditingGiftId(null);
     setShowAddGiftModal(false);
@@ -591,7 +602,7 @@ export default function App() {
     setShowAddGiftModal(true);
   };
 
-  const handleDeleteGift = (giftId) => {
+  const handleDeleteGift = async (giftId) => {
     if (!selectedCampaign || !canEdit) return;
     const updatedCampaign = {
       ...selectedCampaign,
@@ -599,6 +610,9 @@ export default function App() {
     };
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+    
+    // Save to backend
+    await saveCampaignToSheet(updatedCampaign);
   };
 
   if (!user) {
