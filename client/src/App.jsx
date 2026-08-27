@@ -183,7 +183,7 @@ export default function App() {
   const handleCreateCampaign = async () => {
     if (!newCampaignName.trim()) return;
     
-    // Add admin (Amit) and current user as owners/participants
+    // Add admin (Amit) and current user as owners
     const adminUser = { name: "Amit", email: "colleagueproj@gmail.com" };
     const currentUser = { name: user.name, email: user.email };
     
@@ -193,10 +193,19 @@ export default function App() {
       owners.push(currentUser);
     }
     
-    // Participants: admin + current user (if not admin) - always include them
+    // Participants: admin + current user + all other signed-in users
     const participants = [adminUser];
     if (user.email !== adminUser.email) {
       participants.push(currentUser);
+    }
+    
+    // Add all other signed-in users as participants (but not owners)
+    if (allUsers && allUsers.length > 0) {
+      for (const u of allUsers) {
+        // Skip if already an owner
+        if (owners.some(o => o.email === u.email)) continue;
+        participants.push({ name: u.name, email: u.email });
+      }
     }
     
     const newCampaign = {
@@ -641,7 +650,7 @@ export default function App() {
             ))}
           </select>
           {canCreateCampaign && (
-            <button onClick={() => setShowNewCampaignForm(true)} className="btn-small">+ Campaign</button>
+            <button onClick={() => { loadAllUsers(); setShowNewCampaignForm(true); }} className="btn-small">+ Campaign</button>
           )}
           {canCreateCampaign && selectedCampaign && (
             <button onClick={handleDeleteCampaign} className="btn-small btn-danger">🗑️ Delete</button>
@@ -1535,18 +1544,42 @@ export default function App() {
 
             <h3 style={{ marginTop: "20px" }}>Participants</h3>
             <div className="settings-list">
-              {selectedCampaign.participants.map((p, idx) => (
-                <div key={idx} className="list-item" style={{ display: editingParticipantIdx === idx ? "none" : "flex" }}>
-                  <div>
-                    <div style={{ fontWeight: "600", color: "#d4af37" }}>{typeof p === 'object' ? p.name : p}</div>
-                    <div style={{ fontSize: "12px", color: "#b0b0b0" }}>{typeof p === 'object' ? p.email : ''}</div>
+              {selectedCampaign.participants.map((p, idx) => {
+                const pEmail = typeof p === 'object' ? p.email : p;
+                const isAlreadyOwner = selectedCampaign.owners.some(o => (typeof o === 'object' ? o.email : o) === pEmail);
+                
+                return (
+                  <div key={idx} className="list-item" style={{ display: editingParticipantIdx === idx ? "none" : "flex" }}>
+                    <div>
+                      <div style={{ fontWeight: "600", color: "#d4af37" }}>{typeof p === 'object' ? p.name : p}</div>
+                      <div style={{ fontSize: "12px", color: "#b0b0b0" }}>{typeof p === 'object' ? p.email : ''}</div>
+                      {isAlreadyOwner && <div style={{ fontSize: "11px", color: "#FFD700", marginTop: "4px", fontWeight: "500" }}>👑 Owner</div>}
+                    </div>
+                    <div style={{ display: "flex", gap: "5px" }}>
+                      {!isAlreadyOwner && isOwner && (
+                        <button 
+                          onClick={() => {
+                            const participant = typeof p === 'object' ? p : { name: p, email: p };
+                            if (!selectedCampaign.owners.some(o => (typeof o === 'object' ? o.email : o) === (typeof participant === 'object' ? participant.email : participant))) {
+                              setSelectedCampaign({
+                                ...selectedCampaign,
+                                owners: [...selectedCampaign.owners, participant]
+                              });
+                            }
+                          }}
+                          className="btn-small"
+                          style={{ background: "#4a6a4a", borderColor: "#d4af37" }}
+                          title="Promote to Owner"
+                        >
+                          ⬆️ Promote
+                        </button>
+                      )}
+                      <button onClick={() => handleEditParticipant(idx)} className="btn-small">Edit</button>
+                      <button onClick={() => handleRemoveParticipant(idx)} className="btn-small btn-danger">Remove</button>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", gap: "5px" }}>
-                    <button onClick={() => handleEditParticipant(idx)} className="btn-small">Edit</button>
-                    <button onClick={() => handleRemoveParticipant(idx)} className="btn-small btn-danger">Remove</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {editingParticipantIdx !== null && (
                 <div style={{ padding: "12px", background: "#3a4a3a", borderRadius: "4px", marginBottom: "10px" }}>
                   <input type="text" placeholder="Participant name" value={editParticipantName} onChange={e => setEditParticipantName(e.target.value)} className="input-field" style={{ marginBottom: "10px" }} />
