@@ -543,16 +543,21 @@ export default function App() {
         : [...selectedCampaign.budgetItems, budgetItem],
     };
 
-    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
-    setSelectedCampaign(updatedCampaign);
-    
-    // Save to backend
+    // Save to backend FIRST
     console.log("Saving budget item:", budgetItem);
     console.log("Updated campaign:", updatedCampaign);
     const success = await saveCampaignToSheet(updatedCampaign);
     console.log("Save result:", success);
     
-    alert("Budget item " + (editingItemId ? "updated" : "added") + " successfully!");
+    if (success) {
+      // Update local state after successful backend save
+      setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+      setSelectedCampaign(updatedCampaign);
+      alert("Budget item " + (editingItemId ? "updated" : "added") + " successfully!");
+    } else {
+      alert("Failed to save. Please try again.");
+      return;
+    }
     
     setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
     setEditingItemId(null);
@@ -1445,6 +1450,10 @@ export default function App() {
                   <option value="live">Live</option>
                   <option value="merchandise">Merchandise</option>
                   <option value="other">Other</option>
+                  <option value="הקלטות סטודיו">הקלטות סטודיו (Studio Recordings)</option>
+                  <option value="הקלטות ראשוניות">הקלטות ראשוניות (Initial Recordings)</option>
+                  <option value="חלוציות">חלוציות (Merchandise)</option>
+                  <option value="דיווח">דיווח (Reporting)</option>
                 </select>
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
                 <textarea placeholder="Add a comment (optional)" value={newBudgetItem.comment} onChange={e => setNewBudgetItem({...newBudgetItem, comment: e.target.value})} className="input-field" style={{ minHeight: "80px", fontFamily: "inherit", resize: "vertical" }} />
