@@ -51,6 +51,7 @@ export default function App() {
   const [shownNotifications, setShownNotifications] = useState(new Set());
   const [allUsers, setAllUsers] = useState([]);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(null); // "owner" or "participant"
 
   const getDismissedNotifications = () => {
     const dismissed = localStorage.getItem("dismissed_notifications");
@@ -111,13 +112,17 @@ export default function App() {
   };
 
   const loadAllUsers = async () => {
-    if (!isAdmin) return;
     try {
       const response = await fetch(`${APPS_SCRIPT_URL}?action=get_all_users`);
       const users = await response.json();
-      setAllUsers(Array.isArray(users) ? users : []);
+      const formattedUsers = Array.isArray(users) ? users.map(u => ({
+        name: u.name || u.email.split('@')[0],
+        email: u.email
+      })) : [];
+      setAllUsers(formattedUsers);
     } catch (error) {
       console.error("Error loading users:", error);
+      setAllUsers([]);
     }
   };
 
@@ -229,6 +234,32 @@ export default function App() {
     setSelectedCampaign(updatedCampaign);
     setNewOwnerName("");
     setNewOwnerEmail("");
+  };
+
+  const handleAddOwner_User = (user) => {
+    if (!selectedCampaign || !canEdit) return;
+    const ownerObj = { name: user.name, email: user.email };
+    const updatedCampaign = {
+      ...selectedCampaign,
+      owners: [...selectedCampaign.owners, ownerObj],
+      // Automatically add to participants if not already there
+      participants: selectedCampaign.participants.some(p => (typeof p === 'object' ? p.email : p) === user.email)
+        ? selectedCampaign.participants
+        : [...selectedCampaign.participants, ownerObj],
+    };
+    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    setSelectedCampaign(updatedCampaign);
+  };
+
+  const handleAddParticipant_User = (user) => {
+    if (!selectedCampaign || !canEdit) return;
+    const participantObj = { name: user.name, email: user.email };
+    const updatedCampaign = {
+      ...selectedCampaign,
+      participants: [...selectedCampaign.participants, participantObj],
+    };
+    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    setSelectedCampaign(updatedCampaign);
   };
 
   const handleRemoveOwner = (index) => {
@@ -616,7 +647,7 @@ export default function App() {
             <button onClick={handleDeleteCampaign} className="btn-small btn-danger">🗑️ Delete</button>
           )}
           {canEdit && (
-            <button onClick={() => setShowCampaignSettings(true)} className="btn-small">⚙️ Settings</button>
+            <button onClick={() => { loadAllUsers(); setShowCampaignSettings(true); }} className="btn-small">⚙️ Settings</button>
           )}
           <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
         </div>
@@ -1476,7 +1507,28 @@ export default function App() {
               <input type="text" placeholder="Owner name" value={newOwnerName} onChange={e => setNewOwnerName(e.target.value)} className="input-field" style={{ flex: 1 }} />
               <input type="email" placeholder="Owner email" value={newOwnerEmail} onChange={e => setNewOwnerEmail(e.target.value)} className="input-field" style={{ flex: 1 }} />
             </div>
-            <button onClick={handleAddOwner} className="btn-primary" style={{ width: "100%" }}>Add Owner</button>
+            <button onClick={handleAddOwner} className="btn-primary" style={{ width: "100%", marginBottom: "15px" }}>Add Owner</button>
+
+            {/* Select from existing users */}
+            <label style={{ display: "block", marginBottom: "8px", color: "#d4af37", fontWeight: "600", fontSize: "13px" }}>Or select from signed-in users:</label>
+            <select 
+              onChange={(e) => {
+                if (e.target.value) {
+                  const user = allUsers.find(u => u.email === e.target.value);
+                  if (user && !selectedCampaign.owners.some(o => (typeof o === 'object' ? o.email : o) === user.email)) {
+                    handleAddOwner_User(user);
+                  }
+                  e.target.value = "";
+                }
+              }}
+              className="input-field"
+              style={{ marginBottom: "15px" }}
+            >
+              <option value="">-- Select a user --</option>
+              {allUsers.filter(u => !selectedCampaign.owners.some(o => (typeof o === 'object' ? o.email : o) === u.email)).map(user => (
+                <option key={user.email} value={user.email}>{user.name} ({user.email})</option>
+              ))}
+            </select>
 
             <h3 style={{ marginTop: "20px" }}>Participants</h3>
             <div className="settings-list">
@@ -1507,7 +1559,28 @@ export default function App() {
               <input type="text" placeholder="Participant name" value={newParticipantName} onChange={e => setNewParticipantName(e.target.value)} className="input-field" style={{ flex: 1 }} />
               <input type="email" placeholder="Participant email" value={newParticipantEmail} onChange={e => setNewParticipantEmail(e.target.value)} className="input-field" style={{ flex: 1 }} />
             </div>
-            <button onClick={handleAddParticipant} className="btn-primary" style={{ width: "100%" }}>Add Participant</button>
+            <button onClick={handleAddParticipant} className="btn-primary" style={{ width: "100%", marginBottom: "15px" }}>Add Participant</button>
+
+            {/* Select from existing users */}
+            <label style={{ display: "block", marginBottom: "8px", color: "#d4af37", fontWeight: "600", fontSize: "13px" }}>Or select from signed-in users:</label>
+            <select 
+              onChange={(e) => {
+                if (e.target.value) {
+                  const user = allUsers.find(u => u.email === e.target.value);
+                  if (user && !selectedCampaign.participants.some(p => (typeof p === 'object' ? p.email : p) === user.email)) {
+                    handleAddParticipant_User(user);
+                  }
+                  e.target.value = "";
+                }
+              }}
+              className="input-field"
+              style={{ marginBottom: "15px" }}
+            >
+              <option value="">-- Select a user --</option>
+              {allUsers.filter(u => !selectedCampaign.participants.some(p => (typeof p === 'object' ? p.email : p) === u.email)).map(user => (
+                <option key={user.email} value={user.email}>{user.name} ({user.email})</option>
+              ))}
+            </select>
 
             <div className="modal-buttons" style={{ marginTop: "20px" }}>
               <button onClick={() => setShowCampaignSettings(false)} className="btn-primary">Close</button>
