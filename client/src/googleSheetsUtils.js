@@ -145,3 +145,19 @@ export async function removeUser(email) {
     return false;
   }
 }
+
+export async function addBudgetItems(campaignName, items) {
+  try {
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "add_budget_items");
+    url.searchParams.append("campaignName", campaignName);
+    url.searchParams.append("items", JSON.stringify(items));
+    
+    const response = await fetch(url.toString(), { method: "GET" });
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    console.error("Error adding budget items:", error);
+    return false;
+  }
+}

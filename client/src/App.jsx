@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./styles.css";
 import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
-import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser } from "./googleSheetsUtils";
+import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser, addBudgetItems } from "./googleSheetsUtils";
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -109,6 +109,39 @@ export default function App() {
     setCampaigns(normalized);
     if (normalized.length > 0 && !selectedCampaign) {
       setSelectedCampaign(normalized[0]);
+    }
+  };
+
+  const addAlbumBudgetItems = async () => {
+    const budgetItems = [
+      { description: "נגנים", amount: 5000, category: "הקלטות סטודיו", comment: "" },
+      { description: "חדר הקלטות", amount: 1400, category: "הקלטות סטודיו", comment: "12 X 4 ש 350 השכרה" },
+      { description: "פיצה", amount: 10000, category: "הקלטות סטודיו", comment: "אין הוצאה עירונית" },
+      { description: "מאסטור", amount: 7000, category: "הקלטות סטודיו", comment: "" },
+      { description: "הקלטות", amount: 1150, category: "הקלטות ראשוניות", comment: "12 X 3 ש 350 השכרה" },
+      { description: "חדר מיקס", amount: 700, category: "הקלטות ראשוניות", comment: "2 X 12 ש 350 השכרה" },
+      { description: "כיסים קולי", amount: 5000, category: "הקלטות ראשוניות", comment: "RME" },
+      { description: "חלוציות", amount: 2000, category: "חלוציות", comment: "80 חלוציות" },
+      { description: "מדבקות", amount: 200, category: "חלוציות", comment: "" },
+      { description: "דיסקים", amount: 1000, category: "חלוציות", comment: "100 יחידות צילום עצמי" },
+      { description: "הדפסים", amount: 10000, category: "חלוציות", comment: "" },
+      { description: "הצעה דיגיטלית", amount: 200, category: "חלוציות", comment: "" },
+      { description: "שלוחה", amount: 400, category: "חלוציות", comment: "" },
+      { description: "תמחוי להדפסת סטודיו", amount: 3000, category: "דיווח", comment: "" }
+    ];
+    
+    const campaign = campaigns.find(c => c.name === "Weeping Willow Tree first album and live show");
+    if (campaign) {
+      campaign.budgetItems = budgetItems;
+      await saveCampaignToSheet(campaign);
+      const updatedCampaigns = campaigns.map(c => c.id === campaign.id ? campaign : c);
+      setCampaigns(updatedCampaigns);
+      if (selectedCampaign?.id === campaign.id) {
+        setSelectedCampaign(campaign);
+      }
+      alert("Budget items added successfully!");
+    } else {
+      alert("Campaign 'Weeping Willow Tree first album and live show' not found!");
     }
   };
 
@@ -582,6 +615,9 @@ export default function App() {
             <p style={{ marginBottom: "15px", fontSize: "14px", color: "#d4af37" }}>Crowd sourcing campaign</p>
           </div>
           <div style={{ textAlign: "right" }}>
+            {isAdmin && (
+              <button onClick={addAlbumBudgetItems} className="btn-small" style={{ background: "#4a3a1a", marginRight: "10px", fontSize: "11px" }} title="Import budget items">📊 Import Album Budget</button>
+            )}
             <button onClick={handleLogout} className="btn-small">Logout</button>
           </div>
         </div>
