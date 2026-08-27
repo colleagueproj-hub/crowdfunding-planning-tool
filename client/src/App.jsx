@@ -177,14 +177,32 @@ export default function App() {
 
   const handleCreateCampaign = async () => {
     if (!newCampaignName.trim()) return;
+    
+    // Add admin (Amit) and current user as owners/participants
+    const adminUser = { name: "Amit", email: "colleagueproj@gmail.com" };
+    const currentUser = { name: user.name, email: user.email };
+    
+    // Owners: admin + current user (if not admin)
+    const owners = [adminUser];
+    if (user.email !== adminUser.email) {
+      owners.push(currentUser);
+    }
+    
+    // Participants: admin + current user (if not admin) - always include them
+    const participants = [adminUser];
+    if (user.email !== adminUser.email) {
+      participants.push(currentUser);
+    }
+    
     const newCampaign = {
       id: `campaign_${Date.now()}`,
       name: newCampaignName,
       currency: "ILS",
-      owners: [user.email],
-      participants: [],
+      owners: owners,
+      participants: participants,
       planningItems: [],
       budgetItems: [],
+      gifts: [],
       created_at: new Date().toISOString(),
     };
     
