@@ -114,10 +114,10 @@ export default function App() {
 
   const addAlbumBudgetItems = async () => {
     const budgetItems = [
-      { id: "budget_ngnim", description: "נגנים", amount: 5000, category: "הקלטות ראשוניות", comment: "" },
-      { id: "budget_cheder_haklot", description: "חדר הקלטות", amount: 1400, category: "הקלטות ראשוניות", comment: "12 X 4 ש 350 השכרה" },
-      { id: "budget_pizza", description: "פיצה", amount: 10000, category: "הקלטות ראשוניות", comment: "אין הוצאה עירונית" },
-      { id: "budget_mastering", description: "מאסטור", amount: 7000, category: "הקלטות ראשוניות", comment: "" },
+      { id: "budget_ngnim", description: "נגנים", amount: 5000, category: "הקלטות סופיות", comment: "" },
+      { id: "budget_cheder_haklot", description: "חדר הקלטות", amount: 1400, category: "הקלטות סופיות", comment: "12 X 4 ש 350 השכרה" },
+      { id: "budget_pizza", description: "פיצה", amount: 10000, category: "הקלטות סופיות", comment: "אין הוצאה עירונית" },
+      { id: "budget_mastering", description: "מאסטור", amount: 7000, category: "הקלטות סופיות", comment: "" },
       { id: "budget_haklot_rosh", description: "הקלטות", amount: 1150, category: "הקלטות ראשוניות", comment: "12 X 3 ש 350 השכרה" },
       { id: "budget_cheder_mix", description: "חדר מיקס", amount: 700, category: "הקלטות ראשוניות", comment: "2 X 12 ש 350 השכרה" },
       { id: "budget_microphone", description: "כיסים קולי", amount: 5000, category: "הקלטות ראשוניות", comment: "RME" },
@@ -1453,6 +1453,7 @@ export default function App() {
                   <option value="live">Live</option>
                   <option value="merchandise">Merchandise</option>
                   <option value="other">Other</option>
+                  <option value="הקלטות סופיות">הקלטות סופיות (Final Recordings)</option>
                   <option value="הקלטות ראשוניות">הקלטות ראשוניות (Initial Recordings)</option>
                   <option value="מרצ'נדייז">מרצ'נדייז (Merchandise)</option>
                   <option value="ויזואל">ויזואל (Visual)</option>
