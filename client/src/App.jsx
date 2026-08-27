@@ -35,6 +35,8 @@ export default function App() {
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
   const [showManageCategoriesModal, setShowManageCategoriesModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [editingCategoryLabel, setEditingCategoryLabel] = useState("");
   const [categories, setCategories] = useState([
     { id: "recordings", label: "Recordings" },
     { id: "visual", label: "Visual" },
@@ -605,6 +607,18 @@ export default function App() {
     const newCat = { id: categoryId, label: newCategory };
     setCategories([...categories, newCat]);
     setNewCategory("");
+  };
+
+  const handleEditCategory = (cat) => {
+    setEditingCategoryId(cat.id);
+    setEditingCategoryLabel(cat.label);
+  };
+
+  const handleSaveCategory = () => {
+    if (!editingCategoryLabel.trim()) return;
+    setCategories(categories.map(c => c.id === editingCategoryId ? { ...c, label: editingCategoryLabel } : c));
+    setEditingCategoryId(null);
+    setEditingCategoryLabel("");
   };
 
   const handleRemoveCategory = (categoryId) => {
@@ -1824,19 +1838,45 @@ export default function App() {
               <h3 style={{ color: "#d4af37", marginBottom: "15px" }}>Current Categories ({categories.length})</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
                 {categories.map(cat => (
-                  <div key={cat.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "#3a4a3a", borderRadius: "6px", borderLeft: "4px solid #d4af37" }}>
+                  <div key={cat.id} style={{ display: editingCategoryId === cat.id ? "none" : "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "#3a4a3a", borderRadius: "6px", borderLeft: "4px solid #d4af37" }}>
                     <div>
                       <div style={{ fontWeight: "600", color: "#d4af37" }}>{cat.label}</div>
                       <div style={{ fontSize: "12px", color: "#b0b0b0" }}>ID: {cat.id}</div>
                     </div>
-                    <button 
-                      onClick={() => handleRemoveCategory(cat.id)}
-                      className="btn-small btn-danger"
-                    >
-                      Remove
-                    </button>
+                    <div style={{ display: "flex", gap: "5px" }}>
+                      <button 
+                        onClick={() => handleEditCategory(cat)}
+                        className="btn-small"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveCategory(cat.id)}
+                        className="btn-small btn-danger"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 ))}
+                {editingCategoryId && (
+                  <div style={{ padding: "12px", background: "#4a4a3a", borderRadius: "6px", border: "2px solid #d4af37" }}>
+                    <div style={{ marginBottom: "10px" }}>
+                      <label style={{ color: "#d4af37", fontWeight: "600" }}>Edit Category Label</label>
+                      <input 
+                        type="text" 
+                        value={editingCategoryLabel} 
+                        onChange={e => setEditingCategoryLabel(e.target.value)}
+                        className="input-field"
+                        style={{ marginTop: "5px" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button onClick={handleSaveCategory} className="btn-primary" style={{ flex: 1 }}>Save</button>
+                      <button onClick={() => setEditingCategoryId(null)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
