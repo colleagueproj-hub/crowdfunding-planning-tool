@@ -559,14 +559,18 @@ export default function App() {
       ...selectedCampaign,
       budgetItems: editingItemId
         ? selectedCampaign.budgetItems.map(b => {
-            console.log("Comparing:", b.id, "===", editingItemId, "?", b.id === editingItemId);
-            return b.id === editingItemId ? budgetItem : b;
+            const match = b.id === editingItemId;
+            console.log("Comparing:", b.id, "===", editingItemId, "?", match);
+            return match ? budgetItem : b;
           })
         : [...selectedCampaign.budgetItems, budgetItem],
     };
 
+    console.log("Updated budgetItems:", updatedCampaign.budgetItems);
+
     // Save to backend FIRST
     const success = await saveCampaignToSheet(updatedCampaign);
+    console.log("Save result:", success);
     
     if (success) {
       // Update local state after successful backend save
