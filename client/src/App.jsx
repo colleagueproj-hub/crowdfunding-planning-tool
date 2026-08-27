@@ -511,13 +511,12 @@ export default function App() {
   };
 
   const handleAddBudgetItem = async () => {
-    console.log("handleAddBudgetItem called");
+    console.log("handleAddBudgetItem called, editingItemId:", editingItemId);
     if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount || !canEdit) {
-      console.log("Early return - selectedCampaign:", selectedCampaign, "description:", newBudgetItem.description, "amount:", newBudgetItem.amount, "canEdit:", canEdit);
+      console.log("Early return");
       return;
     }
     
-    // Validate: campaign must have at least 1 owner and 1 participant
     if (selectedCampaign.owners.length === 0) {
       alert("Please add at least 1 owner to the campaign first (go to Campaign Settings)");
       return;
@@ -536,24 +535,28 @@ export default function App() {
       comment: newBudgetItem.comment,
     };
 
+    console.log("Current budgetItems:", selectedCampaign.budgetItems);
+    console.log("editingItemId:", editingItemId);
+    console.log("budgetItem to save:", budgetItem);
+    console.log("Will update?", editingItemId ? "YES - updating" : "NO - creating new");
+
     const updatedCampaign = {
       ...selectedCampaign,
       budgetItems: editingItemId
-        ? selectedCampaign.budgetItems.map(b => b.id === editingItemId ? budgetItem : b)
+        ? selectedCampaign.budgetItems.map(b => {
+            console.log("Comparing:", b.id, "===", editingItemId, "?", b.id === editingItemId);
+            return b.id === editingItemId ? budgetItem : b;
+          })
         : [...selectedCampaign.budgetItems, budgetItem],
     };
 
     // Save to backend FIRST
-    console.log("Saving budget item:", budgetItem);
-    console.log("Updated campaign:", updatedCampaign);
     const success = await saveCampaignToSheet(updatedCampaign);
-    console.log("Save result:", success);
     
     if (success) {
       // Update local state after successful backend save
       setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
       setSelectedCampaign(updatedCampaign);
-      alert("Budget item " + (editingItemId ? "updated" : "added") + " successfully!");
     } else {
       alert("Failed to save. Please try again.");
       return;
