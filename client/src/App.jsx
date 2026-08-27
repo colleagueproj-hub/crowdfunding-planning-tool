@@ -74,6 +74,7 @@ export default function App() {
 
   useEffect(() => {
     if (user) {
+      loadAllUsers();
       loadCampaigns();
       loadNotifications();
       // Refresh notifications every 30 seconds
@@ -641,6 +642,27 @@ export default function App() {
             value={selectedCampaign?.id || ""}
             onChange={e => {
               const campaign = (campaigns || []).find(c => c.id === e.target.value);
+              // Ensure campaign has participants - auto-populate if empty
+              if (campaign && (!campaign.participants || campaign.participants.length === 0)) {
+                const adminUser = { name: "Amit", email: "colleagueproj@gmail.com" };
+                const currentUser = { name: user.name, email: user.email };
+                
+                const participants = [adminUser];
+                if (user.email !== adminUser.email) {
+                  participants.push(currentUser);
+                }
+                
+                // Add all signed-in users as participants
+                if (allUsers && allUsers.length > 0) {
+                  for (const u of allUsers) {
+                    if (!participants.some(p => (typeof p === 'object' ? p.email : p) === u.email)) {
+                      participants.push({ name: u.name, email: u.email });
+                    }
+                  }
+                }
+                
+                campaign.participants = participants;
+              }
               setSelectedCampaign(campaign);
             }}
             className="campaign-select"
