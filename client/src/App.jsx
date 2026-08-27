@@ -33,6 +33,19 @@ export default function App() {
     comment: "",
   });
   const [showAddBudgetModal, setShowAddBudgetModal] = useState(false);
+  const [showManageCategoriesModal, setShowManageCategoriesModal] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [categories, setCategories] = useState([
+    { id: "recordings", label: "Recordings" },
+    { id: "visual", label: "Visual" },
+    { id: "live", label: "Live" },
+    { id: "merchandise", label: "Merchandise" },
+    { id: "other", label: "Other" },
+    { id: "הקלטות סופיות", label: "הקלטות סופיות (Final Recordings)" },
+    { id: "הקלטות ראשוניות", label: "הקלטות ראשוניות (Initial Recordings)" },
+    { id: "מרצ'נדייז", label: "מרצ'נדייז (Merchandise)" },
+    { id: "ויזואל", label: "ויזואל (Visual)" }
+  ]);
   const [syncStatus, setSyncStatus] = useState("✓ Synced");
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -584,6 +597,18 @@ export default function App() {
     
     // Save to backend
     await saveCampaignToSheet(updatedCampaign);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) return;
+    const categoryId = newCategory.toLowerCase().replace(/\s+/g, "_");
+    const newCat = { id: categoryId, label: newCategory };
+    setCategories([...categories, newCat]);
+    setNewCategory("");
+  };
+
+  const handleRemoveCategory = (categoryId) => {
+    setCategories(categories.filter(c => c.id !== categoryId));
   };
 
   const handleAddGift = async () => {
@@ -1448,15 +1473,10 @@ export default function App() {
                 <input type="number" placeholder="Amount" value={newBudgetItem.amount} onChange={e => setNewBudgetItem({...newBudgetItem, amount: e.target.value})} className="input-field" />
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
                 <select value={newBudgetItem.category} onChange={e => setNewBudgetItem({...newBudgetItem, category: e.target.value})} className="input-field">
-                  <option value="recordings">Recordings</option>
-                  <option value="visual">Visual</option>
-                  <option value="live">Live</option>
-                  <option value="merchandise">Merchandise</option>
-                  <option value="other">Other</option>
-                  <option value="הקלטות סופיות">הקלטות סופיות (Final Recordings)</option>
-                  <option value="הקלטות ראשוניות">הקלטות ראשוניות (Initial Recordings)</option>
-                  <option value="מרצ'נדייז">מרצ'נדייז (Merchandise)</option>
-                  <option value="ויזואל">ויזואל (Visual)</option>
+                  <option value="">-- Select a category --</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.label}</option>
+                  ))}
                 </select>
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
                 <textarea placeholder="Add a comment (optional)" value={newBudgetItem.comment} onChange={e => setNewBudgetItem({...newBudgetItem, comment: e.target.value})} className="input-field" style={{ minHeight: "80px", fontFamily: "inherit", resize: "vertical" }} />
@@ -1787,7 +1807,54 @@ export default function App() {
             </div>
 
             <div className="modal-buttons" style={{ marginTop: "20px" }}>
+              <button onClick={() => setShowManageCategoriesModal(true)} className="btn-primary" style={{ marginRight: "10px" }}>⚙️ Manage Categories</button>
               <button onClick={() => setShowAdminPanel(false)} className="btn-primary">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Categories Modal */}
+      {showManageCategoriesModal && isAdmin && (
+        <div className="modal-overlay" onClick={() => setShowManageCategoriesModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: "600px", maxHeight: "80vh", overflowY: "auto" }}>
+            <h2 style={{ color: "#d4af37", marginBottom: "20px" }}>⚙️ Manage Budget Categories</h2>
+            
+            <div style={{ marginBottom: "20px" }}>
+              <h3 style={{ color: "#d4af37", marginBottom: "15px" }}>Current Categories ({categories.length})</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                {categories.map(cat => (
+                  <div key={cat.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "#3a4a3a", borderRadius: "6px", borderLeft: "4px solid #d4af37" }}>
+                    <div>
+                      <div style={{ fontWeight: "600", color: "#d4af37" }}>{cat.label}</div>
+                      <div style={{ fontSize: "12px", color: "#b0b0b0" }}>ID: {cat.id}</div>
+                    </div>
+                    <button 
+                      onClick={() => handleRemoveCategory(cat.id)}
+                      className="btn-small btn-danger"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "20px", padding: "15px", background: "#3a4a3a", borderRadius: "6px" }}>
+              <h3 style={{ color: "#d4af37", marginBottom: "10px" }}>Add New Category</h3>
+              <input 
+                type="text" 
+                placeholder="Category name (e.g., הקלטות סופיות)" 
+                value={newCategory} 
+                onChange={e => setNewCategory(e.target.value)}
+                className="input-field"
+                style={{ marginBottom: "10px" }}
+              />
+              <button onClick={handleAddCategory} className="btn-primary" style={{ width: "100%" }}>Add Category</button>
+            </div>
+
+            <div className="modal-buttons">
+              <button onClick={() => setShowManageCategoriesModal(false)} className="btn-primary">Close</button>
             </div>
           </div>
         </div>
