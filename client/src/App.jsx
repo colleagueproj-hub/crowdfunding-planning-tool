@@ -37,7 +37,8 @@ export default function App() {
   const [newCategory, setNewCategory] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [editingCategoryLabel, setEditingCategoryLabel] = useState("");
-  const [categories, setCategories] = useState([
+  
+  const defaultCategories = [
     { id: "recordings", label: "Recordings" },
     { id: "visual", label: "Visual" },
     { id: "live", label: "Live" },
@@ -47,7 +48,16 @@ export default function App() {
     { id: "הקלטות ראשוניות", label: "הקלטות ראשוניות (Initial Recordings)" },
     { id: "מרצ'נדייז", label: "מרצ'נדייז (Merchandise)" },
     { id: "ויזואל", label: "ויזואל (Visual)" }
-  ]);
+  ];
+
+  const [categories, setCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem("budget_categories");
+      return saved ? JSON.parse(saved) : defaultCategories;
+    } catch (e) {
+      return defaultCategories;
+    }
+  });
   const [syncStatus, setSyncStatus] = useState("✓ Synced");
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -619,7 +629,9 @@ export default function App() {
     if (!newCategory.trim()) return;
     const categoryId = newCategory.toLowerCase().replace(/\s+/g, "_");
     const newCat = { id: categoryId, label: newCategory };
-    setCategories([...categories, newCat]);
+    const updated = [...categories, newCat];
+    setCategories(updated);
+    localStorage.setItem("budget_categories", JSON.stringify(updated));
     setNewCategory("");
   };
 
@@ -630,13 +642,17 @@ export default function App() {
 
   const handleSaveCategory = () => {
     if (!editingCategoryLabel.trim()) return;
-    setCategories(categories.map(c => c.id === editingCategoryId ? { ...c, label: editingCategoryLabel } : c));
+    const updated = categories.map(c => c.id === editingCategoryId ? { ...c, label: editingCategoryLabel } : c);
+    setCategories(updated);
+    localStorage.setItem("budget_categories", JSON.stringify(updated));
     setEditingCategoryId(null);
     setEditingCategoryLabel("");
   };
 
   const handleRemoveCategory = (categoryId) => {
-    setCategories(categories.filter(c => c.id !== categoryId));
+    const updated = categories.filter(c => c.id !== categoryId);
+    setCategories(updated);
+    localStorage.setItem("budget_categories", JSON.stringify(updated));
   };
 
   const handleAddGift = async () => {
