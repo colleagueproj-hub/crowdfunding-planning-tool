@@ -1619,7 +1619,13 @@ export default function App() {
             </select>
 
             <div className="modal-buttons" style={{ marginTop: "20px" }}>
-              <button onClick={() => setShowCampaignSettings(false)} className="btn-primary">Close</button>
+              <button onClick={async () => { 
+                await saveCampaignToSheet(selectedCampaign);
+                const updatedCampaigns = campaigns.map(c => c.id === selectedCampaign.id ? selectedCampaign : c);
+                setCampaigns(updatedCampaigns);
+                setShowCampaignSettings(false);
+              }} className="btn-primary">Save & Close</button>
+              <button onClick={() => setShowCampaignSettings(false)} className="btn-secondary">Cancel</button>
             </div>
           </div>
         </div>
