@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./styles.css";
 import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
-import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL } from "./googleSheetsUtils";
+import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser } from "./googleSheetsUtils";
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -113,11 +113,11 @@ export default function App() {
 
   const loadAllUsers = async () => {
     try {
-      const response = await fetch(`${APPS_SCRIPT_URL}?action=get_all_users`);
-      const users = await response.json();
+      const users = await fetchAllUsers();
       const formattedUsers = Array.isArray(users) ? users.map(u => ({
         name: u.name || u.email.split('@')[0],
-        email: u.email
+        email: u.email,
+        is_admin: u.is_admin || false
       })) : [];
       setAllUsers(formattedUsers);
     } catch (error) {
@@ -648,6 +648,9 @@ export default function App() {
           )}
           {canEdit && (
             <button onClick={() => { loadAllUsers(); setShowCampaignSettings(true); }} className="btn-small">⚙️ Settings</button>
+          )}
+          {isAdmin && (
+            <button onClick={() => { loadAllUsers(); setShowAdminPanel(true); }} className="btn-small" style={{ background: "#8B4513", borderColor: "#d4af37" }}>👤 Admin Panel</button>
           )}
           <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
         </div>
@@ -1597,6 +1600,55 @@ export default function App() {
             <div className="modal-buttons">
               <button onClick={handleCreateCampaign} className="btn-primary">Save</button>
               <button onClick={() => setShowNewCampaignForm(false)} className="btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Panel Modal */}
+      {showAdminPanel && isAdmin && (
+        <div className="modal-overlay" onClick={() => setShowAdminPanel(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: "700px", maxHeight: "80vh", overflowY: "auto" }}>
+            <h2 style={{ color: "#d4af37", marginBottom: "20px" }}>👤 Admin Panel - User Management</h2>
+            
+            <div style={{ marginBottom: "30px" }}>
+              <h3 style={{ color: "#d4af37", marginBottom: "15px" }}>Signed-in Users ({allUsers.length})</h3>
+              
+              {allUsers.length === 0 ? (
+                <p style={{ color: "#999" }}>No users registered yet.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {allUsers.map((u, idx) => (
+                    <div key={u.email} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "#3a4a3a", borderRadius: "6px", borderLeft: u.is_admin ? "4px solid #FFD700" : "4px solid #d4af37" }}>
+                      <div>
+                        <div style={{ fontWeight: "600", color: "#d4af37" }}>{u.name}</div>
+                        <div style={{ fontSize: "12px", color: "#b0b0b0" }}>{u.email}</div>
+                        {u.is_admin && <div style={{ fontSize: "11px", color: "#FFD700", marginTop: "4px", fontWeight: "500" }}>👑 Admin</div>}
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          const success = await removeUser(u.email);
+                          if (success) {
+                            setAllUsers(allUsers.filter(usr => usr.email !== u.email));
+                            alert(`User ${u.email} removed successfully.`);
+                          } else {
+                            alert(`Failed to remove user ${u.email}.`);
+                          }
+                        }}
+                        className="btn-small btn-danger"
+                        disabled={u.email === user?.email}
+                        title={u.email === user?.email ? "Cannot remove yourself" : "Remove user"}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-buttons" style={{ marginTop: "20px" }}>
+              <button onClick={() => setShowAdminPanel(false)} className="btn-primary">Close</button>
             </div>
           </div>
         </div>

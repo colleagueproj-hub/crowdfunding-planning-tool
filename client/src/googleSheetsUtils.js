@@ -114,3 +114,34 @@ export async function dismissNotification(userEmail, taskName) {
     return false;
   }
 }
+
+export async function fetchAllUsers() {
+  try {
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "get_all_users");
+    
+    const response = await fetch(url.toString(), { method: "GET" });
+    if (!response.ok) throw new Error("Failed to fetch users");
+    const result = await response.json();
+    
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    return [];
+  }
+}
+
+export async function removeUser(email) {
+  try {
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "remove_user");
+    url.searchParams.append("email", email);
+    
+    const response = await fetch(url.toString(), { method: "GET" });
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    console.error("Error removing user:", error);
+    return false;
+  }
+}
