@@ -114,20 +114,20 @@ export default function App() {
 
   const addAlbumBudgetItems = async () => {
     const budgetItems = [
-      { description: "נגנים", amount: 5000, category: "הקלטות סטודיו", comment: "" },
-      { description: "חדר הקלטות", amount: 1400, category: "הקלטות סטודיו", comment: "12 X 4 ש 350 השכרה" },
-      { description: "פיצה", amount: 10000, category: "הקלטות סטודיו", comment: "אין הוצאה עירונית" },
-      { description: "מאסטור", amount: 7000, category: "הקלטות סטודיו", comment: "" },
-      { description: "הקלטות", amount: 1150, category: "הקלטות ראשוניות", comment: "12 X 3 ש 350 השכרה" },
-      { description: "חדר מיקס", amount: 700, category: "הקלטות ראשוניות", comment: "2 X 12 ש 350 השכרה" },
-      { description: "כיסים קולי", amount: 5000, category: "הקלטות ראשוניות", comment: "RME" },
-      { description: "חלוציות", amount: 2000, category: "חלוציות", comment: "80 חלוציות" },
-      { description: "מדבקות", amount: 200, category: "חלוציות", comment: "" },
-      { description: "דיסקים", amount: 1000, category: "חלוציות", comment: "100 יחידות צילום עצמי" },
-      { description: "הדפסים", amount: 10000, category: "חלוציות", comment: "" },
-      { description: "הצעה דיגיטלית", amount: 200, category: "חלוציות", comment: "" },
-      { description: "שלוחה", amount: 400, category: "חלוציות", comment: "" },
-      { description: "תמחוי להדפסת סטודיו", amount: 3000, category: "דיווח", comment: "" }
+      { id: `budget_${Date.now()}_1`, description: "נגנים", amount: 5000, category: "הקלטות סטודיו", comment: "" },
+      { id: `budget_${Date.now()}_2`, description: "חדר הקלטות", amount: 1400, category: "הקלטות סטודיו", comment: "12 X 4 ש 350 השכרה" },
+      { id: `budget_${Date.now()}_3`, description: "פיצה", amount: 10000, category: "הקלטות סטודיו", comment: "אין הוצאה עירונית" },
+      { id: `budget_${Date.now()}_4`, description: "מאסטור", amount: 7000, category: "הקלטות סטודיו", comment: "" },
+      { id: `budget_${Date.now()}_5`, description: "הקלטות", amount: 1150, category: "הקלטות ראשוניות", comment: "12 X 3 ש 350 השכרה" },
+      { id: `budget_${Date.now()}_6`, description: "חדר מיקס", amount: 700, category: "הקלטות ראשוניות", comment: "2 X 12 ש 350 השכרה" },
+      { id: `budget_${Date.now()}_7`, description: "כיסים קולי", amount: 5000, category: "הקלטות ראשוניות", comment: "RME" },
+      { id: `budget_${Date.now()}_8`, description: "חלוציות", amount: 2000, category: "חלוציות", comment: "80 חלוציות" },
+      { id: `budget_${Date.now()}_9`, description: "מדבקות", amount: 200, category: "חלוציות", comment: "" },
+      { id: `budget_${Date.now()}_10`, description: "דיסקים", amount: 1000, category: "חלוציות", comment: "100 יחידות צילום עצמי" },
+      { id: `budget_${Date.now()}_11`, description: "הדפסים", amount: 10000, category: "חלוציות", comment: "" },
+      { id: `budget_${Date.now()}_12`, description: "הצעה דיגיטלית", amount: 200, category: "חלוציות", comment: "" },
+      { id: `budget_${Date.now()}_13`, description: "שלוחה", amount: 400, category: "חלוציות", comment: "" },
+      { id: `budget_${Date.now()}_14`, description: "תמחוי להדפסת סטודיו", amount: 3000, category: "דיווח", comment: "" }
     ];
     
     const campaign = campaigns.find(c => c.name === "Weeping Willow Tree first album and live show");
@@ -543,7 +543,10 @@ export default function App() {
     setSelectedCampaign(updatedCampaign);
     
     // Save to backend
-    await saveCampaignToSheet(updatedCampaign);
+    console.log("Saving budget item:", budgetItem);
+    console.log("Updated campaign:", updatedCampaign);
+    const success = await saveCampaignToSheet(updatedCampaign);
+    console.log("Save result:", success);
     
     setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
     setEditingItemId(null);
