@@ -615,9 +615,6 @@ export default function App() {
             <p style={{ marginBottom: "15px", fontSize: "14px", color: "#d4af37" }}>Crowd sourcing campaign</p>
           </div>
           <div style={{ textAlign: "right" }}>
-            {isAdmin && (
-              <button onClick={addAlbumBudgetItems} className="btn-small" style={{ background: "#4a3a1a", marginRight: "10px", fontSize: "11px" }} title="Import budget items">📊 Import Album Budget</button>
-            )}
             <button onClick={handleLogout} className="btn-small">Logout</button>
           </div>
         </div>
@@ -718,6 +715,9 @@ export default function App() {
           )}
           {isAdmin && (
             <button onClick={() => { loadAllUsers(); setShowAdminPanel(true); }} className="btn-small" style={{ background: "#8B4513", borderColor: "#d4af37" }}>👤 Admin Panel</button>
+          )}
+          {isAdmin && selectedCampaign?.name === "Weeping Willow Tree first album and live show" && (
+            <button onClick={addAlbumBudgetItems} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>📊 Import Album Budget</button>
           )}
           <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
         </div>
