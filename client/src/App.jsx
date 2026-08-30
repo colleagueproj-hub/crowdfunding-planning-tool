@@ -830,20 +830,52 @@ export default function App() {
   };
 
   const handleAddGift = async () => {
-    if (!selectedCampaign || !newGiftItem.name.trim() || !newGiftItem.price || !newGiftItem.cost || newGiftItem.owners.length === 0 || !canEdit) {
-      alert("Please fill in all fields and select at least 1 owner");
+    if (!selectedCampaign || !canEdit) return;
+
+    const name = (newGiftItem.name || "").trim();
+    const priceRaw = newGiftItem.price;
+    const costRaw = newGiftItem.cost;
+    const priceOk = priceRaw !== "" && priceRaw !== null && priceRaw !== undefined && !Number.isNaN(parseFloat(priceRaw));
+    const costOk = costRaw !== "" && costRaw !== null && costRaw !== undefined && !Number.isNaN(parseFloat(costRaw));
+    const owners = Array.isArray(newGiftItem.owners) ? newGiftItem.owners : [];
+
+    if (!name) {
+      alert("Please enter a gift name");
       return;
+    }
+    if (!priceOk) {
+      alert("Please enter a price (0 is allowed)");
+      return;
+    }
+    if (!costOk) {
+      alert("Please enter a cost (0 is allowed)");
+      return;
+    }
+
+    // If no owner checked, default to current user / first campaign owner
+    let giftOwners = owners;
+    if (giftOwners.length === 0) {
+      if (user) {
+        giftOwners = [{ name: user.name || user.email, email: user.email }];
+      } else if ((selectedCampaign.owners || []).length > 0) {
+        giftOwners = [selectedCampaign.owners[0]];
+      } else {
+        alert("Please select at least 1 gift owner");
+        return;
+      }
     }
 
     const gift = {
       id: editingGiftId || `gift_${Date.now()}`,
-      name: newGiftItem.name.trim(),
-      price: parseFloat(newGiftItem.price),
-      cost: parseFloat(newGiftItem.cost),
+      name,
+      price: parseFloat(priceRaw),
+      cost: parseFloat(costRaw),
       category: newGiftItem.category || "",
-      owners: newGiftItem.owners,
+      owners: giftOwners,
       comment: newGiftItem.comment || "",
-      suggestedQuantity: newGiftItem.suggestedQuantity ? parseInt(newGiftItem.suggestedQuantity) : null,
+      suggestedQuantity: newGiftItem.suggestedQuantity !== "" && newGiftItem.suggestedQuantity != null
+        ? parseInt(newGiftItem.suggestedQuantity, 10)
+        : null,
     };
 
     const updatedCampaign = {
@@ -871,7 +903,15 @@ export default function App() {
   };
 
   const handleEditGift = (gift) => {
-    setNewGiftItem({ name: gift.name, price: gift.price.toString(), cost: gift.cost.toString(), category: gift.category || "", owners: gift.owners, comment: gift.comment || "", suggestedQuantity: gift.suggestedQuantity ? gift.suggestedQuantity.toString() : "" });
+    setNewGiftItem({
+      name: gift.name,
+      price: gift.price != null ? String(gift.price) : "",
+      cost: gift.cost != null ? String(gift.cost) : "",
+      category: gift.category || "",
+      owners: Array.isArray(gift.owners) ? gift.owners : [],
+      comment: gift.comment || "",
+      suggestedQuantity: gift.suggestedQuantity != null ? String(gift.suggestedQuantity) : ""
+    });
     setEditingGiftId(gift.id);
     setShowAddGiftModal(true);
   };
@@ -1846,30 +1886,61 @@ export default function App() {
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Gift Owner(s):</label>
                 <div className="checkbox-group">
-                  {selectedCampaign.participants.map((p, idx) => {
-                    const participantEmail = typeof p === 'object' ? p.email : p;
-                    const participantName = typeof p === 'object' ? p.name : p;
-                    const isChecked = newGiftItem.owners.some(o => (typeof o === 'object' ? o.email : o) === participantEmail);
-                    return (
-                      <label key={participantEmail || participantName} className="checkbox-label">
-                        <input 
-                          type="checkbox" 
-                          checked={isChecked}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setNewGiftItem({...newGiftItem, owners: [...newGiftItem.owners, p]});
-                            } else {
-                              setNewGiftItem({...newGiftItem, owners: newGiftItem.owners.filter(o => {
-                                const oEmail = typeof o === 'object' ? o.email : o;
-                                return oEmail !== participantEmail;
-                              })});
-                            }
-                          }}
-                        />
-                        {participantName}
-                      </label>
-                    );
-                  })}
+                  {(() => {
+                    // Show campaign owners + participants (unique by email/name)
+                    const people = [];
+                    const seen = new Set();
+                    const addPerson = (p) => {
+                      const key = (typeof p === "object" ? (p.email || p.name) : p) || "";
+                      if (!key || seen.has(key)) return;
+                      seen.add(key);
+                      people.push(p);
+                    };
+                    (selectedCampaign.owners || []).forEach(addPerson);
+                    (selectedCampaign.participants || []).forEach(addPerson);
+
+                    if (people.length === 0) {
+                      return <p style={{ color: "#ffcc00" }}>No owners/participants in Campaign Settings yet.</p>;
+                    }
+
+                    const currentOwners = Array.isArray(newGiftItem.owners) ? newGiftItem.owners : [];
+
+                    return people.map((p) => {
+                      const personEmail = typeof p === "object" ? p.email : p;
+                      const personName = typeof p === "object" ? (p.name || p.email) : p;
+                      const personKey = personEmail || personName;
+                      const isChecked = currentOwners.some(o => {
+                        const oEmail = typeof o === "object" ? o.email : o;
+                        const oName = typeof o === "object" ? o.name : o;
+                        return (personEmail && oEmail === personEmail) || oName === personName || oEmail === personKey;
+                      });
+                      return (
+                        <label key={personKey} className="checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={e => {
+                              setNewGiftItem(prev => {
+                                const prevOwners = Array.isArray(prev.owners) ? prev.owners : [];
+                                if (e.target.checked) {
+                                  return { ...prev, owners: [...prevOwners, p] };
+                                }
+                                return {
+                                  ...prev,
+                                  owners: prevOwners.filter(o => {
+                                    const oEmail = typeof o === "object" ? o.email : o;
+                                    const oName = typeof o === "object" ? o.name : o;
+                                    return !((personEmail && oEmail === personEmail) || oName === personName || oEmail === personKey);
+                                  })
+                                };
+                              });
+                            }}
+                          />
+                          {personName}
+                        </label>
+                      );
+                    });
+                  })()}
                 </div>
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
