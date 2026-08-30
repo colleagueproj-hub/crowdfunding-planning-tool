@@ -1750,17 +1750,24 @@ export default function App() {
                 <th>Category</th>
                 <th>Price</th>
                 <th>Quantity</th>
+                <th>Total Price</th>
                 <th>Comment</th>
                 {canEdit && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {selectedCampaign?.budgetItems.map(item => (
+              {selectedCampaign?.budgetItems.map(item => {
+                const unitPrice = item.amount || 0;
+                const qty = item.quantity != null && item.quantity !== "" ? Number(item.quantity) : 1;
+                const safeQty = Number.isNaN(qty) ? 1 : qty;
+                const totalPrice = unitPrice * safeQty;
+                return (
                 <tr key={item.id}>
                   <td>{item.description}</td>
                   <td>{getCategoryLabel(item.category)}</td>
-                  <td>{selectedCampaign.currency} {(item.amount || 0).toFixed(2)}</td>
-                  <td>{item.quantity != null ? item.quantity : 1}</td>
+                  <td>{selectedCampaign.currency} {unitPrice.toFixed(2)}</td>
+                  <td>{safeQty}</td>
+                  <td>{selectedCampaign.currency} {totalPrice.toFixed(2)}</td>
                   <td>{item.comment || "-"}</td>
                   {canEdit && (
                     <td>
@@ -1769,7 +1776,8 @@ export default function App() {
                     </td>
                   )}
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
 
@@ -1786,6 +1794,17 @@ export default function App() {
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Quantity</label>
                 <input type="number" min="0" step="any" placeholder="Quantity" value={newBudgetItem.quantity} onChange={e => setNewBudgetItem({...newBudgetItem, quantity: e.target.value})} className="input-field" />
+
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Total Price</label>
+                <div className="input-field" style={{ background: "#2a2a2a", color: "#ffffff", padding: "10px" }}>
+                  {selectedCampaign?.currency}{" "}
+                  {(
+                    (parseFloat(newBudgetItem.amount) || 0) *
+                    (newBudgetItem.quantity !== "" && newBudgetItem.quantity != null && !Number.isNaN(parseFloat(newBudgetItem.quantity))
+                      ? parseFloat(newBudgetItem.quantity)
+                      : 1)
+                  ).toFixed(2)}
+                </div>
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
                 <select value={newBudgetItem.category} onChange={e => setNewBudgetItem({...newBudgetItem, category: e.target.value})} className="input-field">
