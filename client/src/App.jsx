@@ -38,6 +38,11 @@ export default function App() {
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [editingCategoryLabel, setEditingCategoryLabel] = useState("");
   
+  const [showManageGiftCategoriesModal, setShowManageGiftCategoriesModal] = useState(false);
+  const [newGiftCategory, setNewGiftCategory] = useState("");
+  const [editingGiftCategoryId, setEditingGiftCategoryId] = useState(null);
+  const [editingGiftCategoryLabel, setEditingGiftCategoryLabel] = useState("");
+  
   const defaultCategories = [
     { id: "recordings", label: "Recordings" },
     { id: "visual", label: "Visual" },
@@ -58,6 +63,21 @@ export default function App() {
       return defaultCategories;
     }
   });
+
+  const defaultGiftCategories = [
+    { id: "music", label: "מוזיקה (Music)" },
+    { id: "packs", label: "חבילות (Packs)" },
+    { id: "other", label: "כל מיני (Other)" }
+  ];
+
+  const [giftCategories, setGiftCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem("gift_categories");
+      return saved ? JSON.parse(saved) : defaultGiftCategories;
+    } catch (e) {
+      return defaultGiftCategories;
+    }
+  });
   const [syncStatus, setSyncStatus] = useState("✓ Synced");
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -66,6 +86,7 @@ export default function App() {
     name: "",
     price: "",
     cost: "",
+    category: "",
     owners: [],
     comment: "",
     suggestedQuantity: "",
@@ -656,6 +677,36 @@ export default function App() {
     localStorage.setItem("budget_categories", JSON.stringify(updated));
   };
 
+  const handleAddGiftCategory = () => {
+    if (!newGiftCategory.trim()) return;
+    const categoryId = newGiftCategory.toLowerCase().replace(/\s+/g, "_");
+    const newCat = { id: categoryId, label: newGiftCategory };
+    const updated = [...giftCategories, newCat];
+    setGiftCategories(updated);
+    localStorage.setItem("gift_categories", JSON.stringify(updated));
+    setNewGiftCategory("");
+  };
+
+  const handleEditGiftCategory = (cat) => {
+    setEditingGiftCategoryId(cat.id);
+    setEditingGiftCategoryLabel(cat.label);
+  };
+
+  const handleSaveGiftCategory = () => {
+    if (!editingGiftCategoryLabel.trim()) return;
+    const updated = giftCategories.map(c => c.id === editingGiftCategoryId ? { ...c, label: editingGiftCategoryLabel } : c);
+    setGiftCategories(updated);
+    localStorage.setItem("gift_categories", JSON.stringify(updated));
+    setEditingGiftCategoryId(null);
+    setEditingGiftCategoryLabel("");
+  };
+
+  const handleRemoveGiftCategory = (categoryId) => {
+    const updated = giftCategories.filter(c => c.id !== categoryId);
+    setGiftCategories(updated);
+    localStorage.setItem("gift_categories", JSON.stringify(updated));
+  };
+
   const handleAddGift = async () => {
     if (!selectedCampaign || !newGiftItem.name.trim() || !newGiftItem.price || !newGiftItem.cost || newGiftItem.owners.length === 0 || !canEdit) {
       alert("Please fill in all fields and select at least 1 owner");
@@ -685,13 +736,13 @@ export default function App() {
     // Save to backend
     await saveCampaignToSheet(updatedCampaign);
     
-    setNewGiftItem({ name: "", price: "", cost: "", owners: [], comment: "", suggestedQuantity: "" });
+    setNewGiftItem({ name: "", price: "", cost: "", category: "", owners: [], comment: "", suggestedQuantity: "" });
     setEditingGiftId(null);
     setShowAddGiftModal(false);
   };
 
   const handleEditGift = (gift) => {
-    setNewGiftItem({ name: gift.name, price: gift.price.toString(), cost: gift.cost.toString(), owners: gift.owners, comment: gift.comment || "", suggestedQuantity: gift.suggestedQuantity ? gift.suggestedQuantity.toString() : "" });
+    setNewGiftItem({ name: gift.name, price: gift.price.toString(), cost: gift.cost.toString(), category: gift.category || "", owners: gift.owners, comment: gift.comment || "", suggestedQuantity: gift.suggestedQuantity ? gift.suggestedQuantity.toString() : "" });
     setEditingGiftId(gift.id);
     setShowAddGiftModal(true);
   };
@@ -1572,7 +1623,7 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <button onClick={() => { setNewGiftItem({ name: "", price: "", cost: "", owners: [], comment: "" }); setEditingGiftId(null); setShowAddGiftModal(true); }} className="btn-primary">
+                <button onClick={() => { setNewGiftItem({ name: "", price: "", cost: "", category: "", owners: [], comment: "" }); setEditingGiftId(null); setShowAddGiftModal(true); }} className="btn-primary">
                   + Add Gift
                 </button>
               )}
@@ -1583,8 +1634,10 @@ export default function App() {
             <thead>
               <tr>
                 <th>Gift Name</th>
+                <th>Category</th>
                 <th>Price</th>
                 <th>Cost</th>
+                <th>Total Cost</th>
                 <th>Suggested Quantity</th>
                 <th>Estimated Profit</th>
                 <th>Owners</th>
@@ -1596,11 +1649,14 @@ export default function App() {
               {selectedCampaign?.gifts && selectedCampaign.gifts.length > 0 ? (
                 selectedCampaign.gifts.map(gift => {
                   const estimatedProfit = gift.suggestedQuantity ? (gift.price * gift.suggestedQuantity) : 0;
+                  const totalCost = gift.suggestedQuantity ? (gift.cost * gift.suggestedQuantity) : gift.cost;
                   return (
                   <tr key={gift.id}>
                     <td>{gift.name}</td>
+                    <td>{gift.category || "-"}</td>
                     <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {gift.cost.toFixed(2)}</td>
+                    <td>{selectedCampaign.currency} {totalCost.toFixed(2)}</td>
                     <td>{gift.suggestedQuantity || "-"}</td>
                     <td>{selectedCampaign.currency} {estimatedProfit.toFixed(2)}</td>
                     <td>{gift.owners.join(", ")}</td>
@@ -1616,7 +1672,7 @@ export default function App() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={canEdit ? 8 : 7} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
+                  <td colSpan={canEdit ? 10 : 9} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
                 </tr>
               )}
             </tbody>
@@ -1629,6 +1685,15 @@ export default function App() {
                 <input type="text" placeholder="Gift name" value={newGiftItem.name} onChange={e => setNewGiftItem({...newGiftItem, name: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Price" value={newGiftItem.price} onChange={e => setNewGiftItem({...newGiftItem, price: e.target.value})} className="input-field" />
                 <input type="number" placeholder="Cost" value={newGiftItem.cost} onChange={e => setNewGiftItem({...newGiftItem, cost: e.target.value})} className="input-field" />
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
+                <select value={newGiftItem.category || ""} onChange={e => setNewGiftItem({...newGiftItem, category: e.target.value})} className="input-field">
+                  <option value="">-- Select a category --</option>
+                  {giftCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.label}</option>
+                  ))}
+                </select>
+                
                 <input type="number" placeholder="Suggested Quantity (optional)" value={newGiftItem.suggestedQuantity} onChange={e => setNewGiftItem({...newGiftItem, suggestedQuantity: e.target.value})} className="input-field" />
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Gift Owner(s):</label>
@@ -1874,7 +1939,8 @@ export default function App() {
             </div>
 
             <div className="modal-buttons" style={{ marginTop: "20px" }}>
-              <button onClick={() => setShowManageCategoriesModal(true)} className="btn-primary" style={{ marginRight: "10px" }}>⚙️ Manage Categories</button>
+              <button onClick={() => setShowManageCategoriesModal(true)} className="btn-primary" style={{ marginRight: "10px" }}>⚙️ Manage Budget Categories</button>
+              <button onClick={() => setShowManageGiftCategoriesModal(true)} className="btn-primary" style={{ marginRight: "10px" }}>⚙️ Manage Gift Categories</button>
               <button onClick={() => setShowAdminPanel(false)} className="btn-primary">Close</button>
             </div>
           </div>
@@ -1948,6 +2014,78 @@ export default function App() {
 
             <div className="modal-buttons">
               <button onClick={() => setShowManageCategoriesModal(false)} className="btn-primary">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Gift Categories Modal */}
+      {showManageGiftCategoriesModal && isAdmin && (
+        <div className="modal-overlay" onClick={() => setShowManageGiftCategoriesModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: "600px", maxHeight: "80vh", overflowY: "auto" }}>
+            <h2 style={{ color: "#d4af37", marginBottom: "20px" }}>⚙️ Manage Gift Categories</h2>
+            
+            <div style={{ marginBottom: "20px" }}>
+              <h3 style={{ color: "#d4af37", marginBottom: "15px" }}>Current Categories ({giftCategories.length})</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                {giftCategories.map(cat => (
+                  <div key={cat.id} style={{ display: editingGiftCategoryId === cat.id ? "none" : "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "#3a4a3a", borderRadius: "6px", borderLeft: "4px solid #d4af37" }}>
+                    <div>
+                      <div style={{ fontWeight: "600", color: "#d4af37" }}>{cat.label}</div>
+                      <div style={{ fontSize: "12px", color: "#b0b0b0" }}>ID: {cat.id}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: "5px" }}>
+                      <button 
+                        onClick={() => handleEditGiftCategory(cat)}
+                        className="btn-small"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveGiftCategory(cat.id)}
+                        className="btn-small btn-danger"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {editingGiftCategoryId && (
+                  <div style={{ padding: "12px", background: "#4a4a3a", borderRadius: "6px", border: "2px solid #d4af37" }}>
+                    <div style={{ marginBottom: "10px" }}>
+                      <label style={{ color: "#d4af37", fontWeight: "600" }}>Edit Category Label</label>
+                      <input 
+                        type="text" 
+                        value={editingGiftCategoryLabel} 
+                        onChange={e => setEditingGiftCategoryLabel(e.target.value)}
+                        className="input-field"
+                        style={{ marginTop: "5px" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button onClick={handleSaveGiftCategory} className="btn-primary" style={{ flex: 1 }}>Save</button>
+                      <button onClick={() => setEditingGiftCategoryId(null)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "20px", padding: "15px", background: "#3a4a3a", borderRadius: "6px" }}>
+              <h3 style={{ color: "#d4af37", marginBottom: "10px" }}>Add New Category</h3>
+              <input 
+                type="text" 
+                placeholder="Category name (e.g., מוזיקה)" 
+                value={newGiftCategory} 
+                onChange={e => setNewGiftCategory(e.target.value)}
+                className="input-field"
+                style={{ marginBottom: "10px" }}
+              />
+              <button onClick={handleAddGiftCategory} className="btn-primary" style={{ width: "100%" }}>Add Category</button>
+            </div>
+
+            <div className="modal-buttons">
+              <button onClick={() => setShowManageGiftCategoriesModal(false)} className="btn-primary">Close</button>
             </div>
           </div>
         </div>
