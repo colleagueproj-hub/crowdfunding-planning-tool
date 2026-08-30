@@ -1,5 +1,5 @@
 const HARDCODED_SHEET_ID = "19Qir2g-4lZBJWuMvWudybqkIemqZxkeghEFfZsjJpfE";
-export const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKYynX0HdNX4Pg55Nruo0u1_zSiGDBkx-uXV96-7PbTmBI0Y42y3kq35Etdd6ueaDBZA/exec";
+export const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxrQAJ1pmUSrAoiK1aSsa1CFk3cbL2gwo1-QrLrNt0Ns1ZayKf7FoJVJ1_3JUBWqhw4pw/exec";
 
 async function callAppsScriptGet(params, timeoutMs = 15000) {
   const url = new URL(APPS_SCRIPT_URL);
