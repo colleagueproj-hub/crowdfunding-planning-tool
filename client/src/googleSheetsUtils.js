@@ -58,35 +58,56 @@ export async function saveCampaignToSheet(campaign) {
       data: campaign
     });
 
-    // Prefer POST so large campaigns (budget + gifts + plan) are not truncated by URL length
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    const tryPost = async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       try {
         const response = await fetch(APPS_SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: payload,
-          redirect: "follow"
+          redirect: "follow",
+          signal: controller.signal
         });
         const result = await response.json();
-        if (result.action === "save" || result.success !== false) {
-          return true;
-        }
-      } catch (error) {
-        // Fallback to GET for older deployments / smaller payloads
-        try {
-          const url = new URL(APPS_SCRIPT_URL);
-          url.searchParams.append("action", "save");
-          url.searchParams.append("id", campaign.id);
-          url.searchParams.append("data", JSON.stringify(campaign));
-          const response = await fetch(url.toString(), { method: "GET" });
-          const result = await response.json();
-          if (result.action === "save") return true;
-        } catch (_) {
-          if (attempt === 3) throw error;
-        }
-        await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+        // Only treat explicit save acknowledgement as success
+        return !!(result && result.action === "save");
+      } finally {
+        clearTimeout(timeout);
       }
+    };
+
+    const tryGet = async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+      try {
+        const url = new URL(APPS_SCRIPT_URL);
+        url.searchParams.append("action", "save");
+        url.searchParams.append("id", campaign.id);
+        url.searchParams.append("data", JSON.stringify(campaign));
+        const response = await fetch(url.toString(), {
+          method: "GET",
+          signal: controller.signal
+        });
+        const result = await response.json();
+        return !!(result && result.action === "save");
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+
+    try {
+      if (await tryPost()) return true;
+    } catch (e) {
+      console.warn("POST save failed/timed out, trying GET:", e.message);
     }
+
+    try {
+      if (await tryGet()) return true;
+    } catch (e) {
+      console.warn("GET save failed:", e.message);
+    }
+
     return false;
   } catch (error) {
     console.error("Error syncing:", error);

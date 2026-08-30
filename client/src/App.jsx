@@ -697,9 +697,7 @@ export default function App() {
   };
 
   const handleAddBudgetItem = async () => {
-    console.log("handleAddBudgetItem called, editingItemId:", editingItemId);
     if (!selectedCampaign || !newBudgetItem.description.trim() || !newBudgetItem.amount || !canEdit) {
-      console.log("Early return");
       return;
     }
     
@@ -715,56 +713,33 @@ export default function App() {
 
     const budgetItem = {
       id: editingItemId || `budget_${Date.now()}`,
-      description: newBudgetItem.description,
+      description: newBudgetItem.description.trim(),
       amount: parseFloat(newBudgetItem.amount),
       category: newBudgetItem.category,
-      comment: newBudgetItem.comment,
+      comment: newBudgetItem.comment || "",
     };
-
-    console.log("Current budgetItems:", selectedCampaign.budgetItems);
-    console.log("editingItemId:", editingItemId);
-    console.log("budgetItem to save:", budgetItem);
-    console.log("Will update?", editingItemId ? "YES - updating" : "NO - creating new");
 
     const updatedCampaign = {
       ...selectedCampaign,
       budgetItems: editingItemId
-        ? selectedCampaign.budgetItems.map(b => {
-            const match = b.id === editingItemId;
-            console.log("Comparing:", b.id, "===", editingItemId, "?", match);
-            return match ? budgetItem : b;
-          })
-        : [...selectedCampaign.budgetItems, budgetItem],
+        ? selectedCampaign.budgetItems.map(b => b.id === editingItemId ? budgetItem : b)
+        : [...(selectedCampaign.budgetItems || []), budgetItem],
     };
 
-    console.log("Updated budgetItems:", updatedCampaign.budgetItems);
-    console.log("About to save campaign to sheet...");
-
-    try {
-      // Save to backend FIRST
-      const success = await saveCampaignToSheet(updatedCampaign);
-      console.log("Save result:", success);
-      
-      if (success) {
-        // Update local state after successful backend save
-        setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
-        setSelectedCampaign(updatedCampaign);
-        console.log("State updated successfully");
-      } else {
-        console.log("Save returned false");
-        alert("Failed to save. Please try again.");
-        return;
-      }
-    } catch (error) {
-      console.error("Error saving:", error);
-      alert("Error: " + error.message);
-      return;
-    }
-    
+    // Optimistic UI: update immediately, then sync in background
+    setCampaigns(prev => prev.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    setSelectedCampaign(updatedCampaign);
     setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
     setEditingItemId(null);
     setShowAddBudgetModal(false);
-    console.log("Modal closed and form reset");
+    setSyncStatus("⏳ Syncing...");
+
+    const success = await saveCampaignToSheet(updatedCampaign);
+    setSyncStatus(success ? "✓ Synced" : "❌ Sync failed");
+    if (!success) {
+      alert("Saved locally, but sync to Google Sheets failed. Click Sync Now to retry.");
+    }
+    setTimeout(() => setSyncStatus("✓ Synced"), 3000);
   };
 
   const handleEditBudgetItem = (item) => {
@@ -816,6 +791,12 @@ export default function App() {
     localStorage.setItem("budget_categories", JSON.stringify(updated));
   };
 
+  const getCategoryLabel = (categoryId, list = categories) => {
+    if (!categoryId) return "-";
+    const found = list.find(c => c.id === categoryId || c.label === categoryId);
+    return found ? found.label : categoryId;
+  };
+
   const handleAddGiftCategory = () => {
     if (!newGiftCategory.trim()) return;
     const categoryId = newGiftCategory.toLowerCase().replace(/\s+/g, "_");
@@ -854,11 +835,12 @@ export default function App() {
 
     const gift = {
       id: editingGiftId || `gift_${Date.now()}`,
-      name: newGiftItem.name,
+      name: newGiftItem.name.trim(),
       price: parseFloat(newGiftItem.price),
       cost: parseFloat(newGiftItem.cost),
+      category: newGiftItem.category || "",
       owners: newGiftItem.owners,
-      comment: newGiftItem.comment,
+      comment: newGiftItem.comment || "",
       suggestedQuantity: newGiftItem.suggestedQuantity ? parseInt(newGiftItem.suggestedQuantity) : null,
     };
 
@@ -866,18 +848,23 @@ export default function App() {
       ...selectedCampaign,
       gifts: editingGiftId
         ? selectedCampaign.gifts.map(g => g.id === editingGiftId ? gift : g)
-        : [...selectedCampaign.gifts, gift],
+        : [...(selectedCampaign.gifts || []), gift],
     };
 
-    setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
+    // Optimistic UI: update immediately, then sync in background
+    setCampaigns(prev => prev.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
-    
-    // Save to backend
-    await saveCampaignToSheet(updatedCampaign);
-    
     setNewGiftItem({ name: "", price: "", cost: "", category: "", owners: [], comment: "", suggestedQuantity: "" });
     setEditingGiftId(null);
     setShowAddGiftModal(false);
+    setSyncStatus("⏳ Syncing...");
+
+    const success = await saveCampaignToSheet(updatedCampaign);
+    setSyncStatus(success ? "✓ Synced" : "❌ Sync failed");
+    if (!success) {
+      alert("Saved locally, but sync to Google Sheets failed. Click Sync Now to retry.");
+    }
+    setTimeout(() => setSyncStatus("✓ Synced"), 3000);
   };
 
   const handleEditGift = (gift) => {
@@ -1714,7 +1701,7 @@ export default function App() {
               {selectedCampaign?.budgetItems.map(item => (
                 <tr key={item.id}>
                   <td>{item.description}</td>
-                  <td>{item.category}</td>
+                  <td>{getCategoryLabel(item.category)}</td>
                   <td>{selectedCampaign.currency} {item.amount.toFixed(2)}</td>
                   <td>{item.comment || "-"}</td>
                   {canEdit && (
@@ -1804,7 +1791,7 @@ export default function App() {
                   return (
                   <tr key={gift.id}>
                     <td>{gift.name}</td>
-                    <td>{gift.category || "-"}</td>
+                    <td>{getCategoryLabel(gift.category, giftCategories)}</td>
                     <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {gift.cost.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {totalCost.toFixed(2)}</td>
