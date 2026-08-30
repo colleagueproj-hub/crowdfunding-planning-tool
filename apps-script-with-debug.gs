@@ -25,28 +25,19 @@ function doGet(e) {
     return handleAddBudgetItems(e);
   } else if (action === "set_planning_items") {
     return handleSetPlanningItems(e);
+  } else if (action === "set_campaign_field") {
+    return handleSetCampaignField(e);
+  } else if (action === "upsert_item") {
+    return handleUpsertItem(e);
   } else {
     return handleRead();
   }
 }
 
+// Form POST from the browser: parameters land in e.parameter just like GET.
+// This avoids URL length limits that break large campaign saves.
 function doPost(e) {
-  try {
-    let payload = {};
-    if (e.postData && e.postData.contents) {
-      payload = JSON.parse(e.postData.contents);
-    }
-    const action = payload.action || (e.parameter && e.parameter.action);
-    if (action === "save") {
-      return handleSavePayload(payload.id, typeof payload.data === "string" ? payload.data : JSON.stringify(payload.data));
-    }
-    if (action === "set_planning_items") {
-      return handleSetPlanningItemsPayload(payload.campaignName, payload.items);
-    }
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: "Unknown POST action"})).setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()})).setMimeType(ContentService.MimeType.JSON);
-  }
+  return doGet(e);
 }
 
 function handleLogin(e) {
@@ -166,6 +157,96 @@ function handleSetPlanningItemsPayload(campaignName, items) {
       }
     }
     return ContentService.createTextOutput(JSON.stringify({success: false, error: "Campaign not found"})).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function findCampaignRow_(sheet, id) {
+  const allData = sheet.getRange("A:B").getValues();
+  for (let i = 1; i < allData.length; i++) {
+    if (allData[i][0] === id) {
+      return { row: i + 1, campaign: JSON.parse(allData[i][1]) };
+    }
+  }
+  return null;
+}
+
+// Merge one field into an existing campaign (keeps URL small)
+function handleSetCampaignField(e) {
+  try {
+    const id = e.parameter.id;
+    const field = e.parameter.field;
+    const value = JSON.parse(e.parameter.value);
+    const allowed = {
+      planningItems: true,
+      budgetItems: true,
+      gifts: true,
+      owners: true,
+      participants: true,
+      name: true,
+      currency: true,
+      sentReminders: true,
+      meta: true
+    };
+    if (!allowed[field]) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: "Invalid field"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("data");
+    const found = findCampaignRow_(sheet, id);
+    if (!found) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: "Campaign not found"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (field === "meta" && value && typeof value === "object") {
+      Object.keys(value).forEach(function(k) {
+        found.campaign[k] = value[k];
+      });
+    } else {
+      found.campaign[field] = value;
+    }
+
+    sheet.getRange(found.row, 2).setValue(JSON.stringify(found.campaign));
+    return ContentService.createTextOutput(JSON.stringify({action: "save", success: true, field: field})).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Upsert a single budget/gift/planning item by id
+function handleUpsertItem(e) {
+  try {
+    const id = e.parameter.id;
+    const listName = e.parameter.list; // budgetItems | gifts | planningItems
+    const item = JSON.parse(e.parameter.item);
+    const mode = e.parameter.mode || "upsert"; // upsert | delete
+
+    if (["budgetItems", "gifts", "planningItems"].indexOf(listName) === -1) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: "Invalid list"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("data");
+    const found = findCampaignRow_(sheet, id);
+    if (!found) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: "Campaign not found"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (!Array.isArray(found.campaign[listName])) found.campaign[listName] = [];
+
+    if (mode === "delete") {
+      found.campaign[listName] = found.campaign[listName].filter(function(x) { return x.id !== item.id; });
+    } else {
+      var idx = -1;
+      for (var i = 0; i < found.campaign[listName].length; i++) {
+        if (found.campaign[listName][i].id === item.id) { idx = i; break; }
+      }
+      if (idx >= 0) found.campaign[listName][idx] = item;
+      else found.campaign[listName].push(item);
+    }
+
+    sheet.getRange(found.row, 2).setValue(JSON.stringify(found.campaign));
+    return ContentService.createTextOutput(JSON.stringify({action: "save", success: true, list: listName})).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()})).setMimeType(ContentService.MimeType.JSON);
   }

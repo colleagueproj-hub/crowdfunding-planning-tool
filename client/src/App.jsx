@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./styles.css";
 import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
-import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser, addBudgetItems, setPlanningItems } from "./googleSheetsUtils";
+import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser, addBudgetItems, setPlanningItems, upsertCampaignItem } from "./googleSheetsUtils";
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -734,12 +734,14 @@ export default function App() {
     setShowAddBudgetModal(false);
     setSyncStatus("⏳ Syncing...");
 
-    const success = await saveCampaignToSheet(updatedCampaign);
+    // Prefer small single-item upsert (reliable); fall back to full campaign save
+    let success = await upsertCampaignItem(selectedCampaign.id, "budgetItems", budgetItem, "upsert");
+    if (!success) success = await saveCampaignToSheet(updatedCampaign);
     setSyncStatus(success ? "✓ Synced" : "❌ Sync failed");
     if (!success) {
-      alert("Saved locally, but sync to Google Sheets failed. Click Sync Now to retry.");
+      alert("Saved locally, but sync to Google Sheets failed. Please redeploy Apps Script (see Sync help) or click Sync Now after updating the script.");
     }
-    setTimeout(() => setSyncStatus("✓ Synced"), 3000);
+    setTimeout(() => setSyncStatus(success ? "✓ Synced" : "❌ Sync failed"), 4000);
   };
 
   const handleEditBudgetItem = (item) => {
@@ -859,12 +861,13 @@ export default function App() {
     setShowAddGiftModal(false);
     setSyncStatus("⏳ Syncing...");
 
-    const success = await saveCampaignToSheet(updatedCampaign);
+    let success = await upsertCampaignItem(selectedCampaign.id, "gifts", gift, "upsert");
+    if (!success) success = await saveCampaignToSheet(updatedCampaign);
     setSyncStatus(success ? "✓ Synced" : "❌ Sync failed");
     if (!success) {
-      alert("Saved locally, but sync to Google Sheets failed. Click Sync Now to retry.");
+      alert("Saved locally, but sync to Google Sheets failed. Please redeploy Apps Script or click Sync Now after updating the script.");
     }
-    setTimeout(() => setSyncStatus("✓ Synced"), 3000);
+    setTimeout(() => setSyncStatus(success ? "✓ Synced" : "❌ Sync failed"), 4000);
   };
 
   const handleEditGift = (gift) => {

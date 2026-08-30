@@ -1,24 +1,72 @@
 const HARDCODED_SHEET_ID = "19Qir2g-4lZBJWuMvWudybqkIemqZxkeghEFfZsjJpfE";
 export const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKYynX0HdNX4Pg55Nruo0u1_zSiGDBkx-uXV96-7PbTmBI0Y42y3kq35Etdd6ueaDBZA/exec";
 
+async function callAppsScriptGet(params, timeoutMs = 15000) {
+  const url = new URL(APPS_SCRIPT_URL);
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.append(key, value == null ? "" : String(value));
+  });
+
+  // Google Apps Script rejects very long URLs
+  if (url.toString().length > 7500) {
+    throw new Error("Request too large for GET");
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url.toString(), { method: "GET", signal: controller.signal });
+    const text = await response.text();
+    if (!text || text.trim().startsWith("<")) {
+      throw new Error("Apps Script returned HTML instead of JSON (redeploy needed?)");
+    }
+    return JSON.parse(text);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function callAppsScriptFormPost(params, timeoutMs = 15000) {
+  const body = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    body.set(key, value == null ? "" : String(value));
+  });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
+      body: body.toString(),
+      redirect: "follow",
+      signal: controller.signal
+    });
+    const text = await response.text();
+    if (!text || text.trim().startsWith("<")) {
+      throw new Error("POST not available on current Apps Script deployment");
+    }
+    return JSON.parse(text);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function loginUser(email, password, name, isSignUp) {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", isSignUp ? "signup" : "login");
-    url.searchParams.append("email", email);
-    url.searchParams.append("password", password);
-    if (name) url.searchParams.append("name", name);
-    
-    const response = await fetch(url.toString(), { method: "GET" });
-    const result = await response.json();
-    
+    const result = await callAppsScriptGet({
+      action: isSignUp ? "signup" : "login",
+      email,
+      password,
+      ...(name ? { name } : {})
+    });
     if (result.success) {
       localStorage.setItem("crowdfunding_user", JSON.stringify(result));
     }
     return result;
   } catch (error) {
     console.error("Login error:", error);
-    return {success: false, error: error.message};
+    return { success: false, error: error.message };
   }
 }
 
@@ -33,13 +81,7 @@ export function logoutUser() {
 
 export async function fetchCampaignsFromSheet() {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "read");
-    
-    const response = await fetch(url.toString(), { method: "GET" });
-    if (!response.ok) throw new Error("Failed to fetch");
-    const result = await response.json();
-    
+    const result = await callAppsScriptGet({ action: "read" });
     const campaigns = Array.isArray(result) ? result : (result.campaigns || []);
     localStorage.setItem("crowdfunding_campaigns_cache", JSON.stringify(campaigns));
     return campaigns;
@@ -50,65 +92,117 @@ export async function fetchCampaignsFromSheet() {
   }
 }
 
+async function setCampaignField(id, field, value) {
+  const params = {
+    action: "set_campaign_field",
+    id,
+    field,
+    value: JSON.stringify(value)
+  };
+
+  // Prefer GET (works with current Apps Script CORS behavior); fall back to form POST
+  try {
+    const result = await callAppsScriptGet(params);
+    return !!(result && (result.success || result.action === "save"));
+  } catch (e) {
+    try {
+      const result = await callAppsScriptFormPost(params);
+      return !!(result && (result.success || result.action === "save"));
+    } catch (e2) {
+      console.warn(`setCampaignField(${field}) failed:`, e2.message);
+      return false;
+    }
+  }
+}
+
+/** Upsert/delete one item — small payload, reliable over GET */
+export async function upsertCampaignItem(campaignId, listName, item, mode = "upsert") {
+  const params = {
+    action: "upsert_item",
+    id: campaignId,
+    list: listName,
+    item: JSON.stringify(item),
+    mode
+  };
+  try {
+    const result = await callAppsScriptGet(params);
+    return !!(result && (result.success || result.action === "save"));
+  } catch (e) {
+    try {
+      const result = await callAppsScriptFormPost(params);
+      return !!(result && (result.success || result.action === "save"));
+    } catch (e2) {
+      console.warn("upsertCampaignItem failed:", e2.message);
+      return false;
+    }
+  }
+}
+
+/**
+ * Save a full campaign without blowing the URL length limit.
+ * Uses field-by-field merges (and per-item upserts if a field is still too large).
+ */
 export async function saveCampaignToSheet(campaign) {
   try {
-    const payload = JSON.stringify({
-      action: "save",
-      id: campaign.id,
-      data: campaign
-    });
-
-    const tryPost = async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      try {
-        const response = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: payload,
-          redirect: "follow",
-          signal: controller.signal
-        });
-        const result = await response.json();
-        // Only treat explicit save acknowledgement as success
-        return !!(result && result.action === "save");
-      } finally {
-        clearTimeout(timeout);
-      }
-    };
-
-    const tryGet = async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000);
-      try {
-        const url = new URL(APPS_SCRIPT_URL);
-        url.searchParams.append("action", "save");
-        url.searchParams.append("id", campaign.id);
-        url.searchParams.append("data", JSON.stringify(campaign));
-        const response = await fetch(url.toString(), {
-          method: "GET",
-          signal: controller.signal
-        });
-        const result = await response.json();
-        return !!(result && result.action === "save");
-      } finally {
-        clearTimeout(timeout);
-      }
-    };
-
+    // 1) Try full form POST save (works after doPost redeploy)
     try {
-      if (await tryPost()) return true;
-    } catch (e) {
-      console.warn("POST save failed/timed out, trying GET:", e.message);
+      const result = await callAppsScriptFormPost({
+        action: "save",
+        id: campaign.id,
+        data: JSON.stringify(campaign)
+      });
+      if (result && result.action === "save") return true;
+    } catch (_) {
+      // continue to chunked GET strategy
     }
 
+    // 2) Try full GET save only if small enough
     try {
-      if (await tryGet()) return true;
-    } catch (e) {
-      console.warn("GET save failed:", e.message);
+      const result = await callAppsScriptGet({
+        action: "save",
+        id: campaign.id,
+        data: JSON.stringify(campaign)
+      });
+      if (result && result.action === "save") return true;
+    } catch (_) {
+      // continue
     }
 
-    return false;
+    // 3) Chunked field merges via GET (requires set_campaign_field / upsert_item redeploy)
+    const meta = {
+      name: campaign.name,
+      currency: campaign.currency,
+      owners: campaign.owners || [],
+      participants: campaign.participants || [],
+      created_at: campaign.created_at,
+      sentReminders: campaign.sentReminders || {}
+    };
+
+    const steps = [
+      ["meta", meta],
+      ["planningItems", campaign.planningItems || []],
+      ["budgetItems", campaign.budgetItems || []],
+      ["gifts", campaign.gifts || []]
+    ];
+
+    for (const [field, value] of steps) {
+      const ok = await setCampaignField(campaign.id, field, value);
+      if (ok) continue;
+
+      // Field still too large — upsert items one-by-one
+      if (field === "budgetItems" || field === "gifts" || field === "planningItems") {
+        // Clear list first with empty array if possible
+        await setCampaignField(campaign.id, field, []);
+        for (const item of value) {
+          const itemOk = await upsertCampaignItem(campaign.id, field, item, "upsert");
+          if (!itemOk) return false;
+        }
+      } else {
+        return false;
+      }
+    }
+
+    return true;
   } catch (error) {
     console.error("Error syncing:", error);
     return false;
@@ -117,28 +211,12 @@ export async function saveCampaignToSheet(campaign) {
 
 export async function setPlanningItems(campaignName, items) {
   try {
-    const payload = JSON.stringify({
+    const result = await callAppsScriptGet({
       action: "set_planning_items",
       campaignName,
-      items
+      items: JSON.stringify(items)
     });
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: payload,
-      redirect: "follow"
-    });
-    const result = await response.json();
-    if (result.success) return true;
-
-    // Fallback GET for older deployments
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "set_planning_items");
-    url.searchParams.append("campaignName", campaignName);
-    url.searchParams.append("items", JSON.stringify(items));
-    const getResp = await fetch(url.toString(), { method: "GET" });
-    const getResult = await getResp.json();
-    return !!getResult.success;
+    return !!result.success;
   } catch (error) {
     console.error("Error setting planning items:", error);
     return false;
@@ -151,14 +229,10 @@ export function getDefaultSheetId() {
 
 export async function fetchNotifications(userEmail) {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "fetch_notifications");
-    url.searchParams.append("email", userEmail);
-    
-    const response = await fetch(url.toString(), { method: "GET" });
-    if (!response.ok) throw new Error("Failed to fetch notifications");
-    const result = await response.json();
-    
+    const result = await callAppsScriptGet({
+      action: "fetch_notifications",
+      email: userEmail
+    });
     return Array.isArray(result) ? result : [];
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -168,14 +242,12 @@ export async function fetchNotifications(userEmail) {
 
 export async function dismissNotification(userEmail, taskName) {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "dismiss_notification");
-    url.searchParams.append("email", userEmail);
-    url.searchParams.append("task", taskName);
-    
-    const response = await fetch(url.toString(), { method: "GET" });
-    const result = await response.json();
-    return result.success;
+    const result = await callAppsScriptGet({
+      action: "dismiss_notification",
+      email: userEmail,
+      task: taskName
+    });
+    return !!result.success;
   } catch (error) {
     console.error("Error dismissing notification:", error);
     return false;
@@ -184,29 +256,18 @@ export async function dismissNotification(userEmail, taskName) {
 
 export async function fetchAllUsers() {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "get_all_users");
-    
-    const response = await fetch(url.toString(), { method: "GET" });
-    if (!response.ok) throw new Error("Failed to fetch users");
-    const result = await response.json();
-    
-    return Array.isArray(result) ? result : [];
+    const result = await callAppsScriptGet({ action: "get_all_users" });
+    return Array.isArray(result) ? result : (result.users || []);
   } catch (error) {
-    console.error("Error fetching all users:", error);
+    console.error("Error fetching users:", error);
     return [];
   }
 }
 
 export async function removeUser(email) {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "remove_user");
-    url.searchParams.append("email", email);
-    
-    const response = await fetch(url.toString(), { method: "GET" });
-    const result = await response.json();
-    return result.success;
+    const result = await callAppsScriptGet({ action: "remove_user", email });
+    return !!result.success;
   } catch (error) {
     console.error("Error removing user:", error);
     return false;
@@ -215,14 +276,12 @@ export async function removeUser(email) {
 
 export async function addBudgetItems(campaignName, items) {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "add_budget_items");
-    url.searchParams.append("campaignName", campaignName);
-    url.searchParams.append("items", JSON.stringify(items));
-    
-    const response = await fetch(url.toString(), { method: "GET" });
-    const result = await response.json();
-    return result.success;
+    const result = await callAppsScriptGet({
+      action: "add_budget_items",
+      campaignName,
+      items: JSON.stringify(items)
+    });
+    return !!result.success;
   } catch (error) {
     console.error("Error adding budget items:", error);
     return false;
