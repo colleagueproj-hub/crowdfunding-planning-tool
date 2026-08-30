@@ -1061,6 +1061,8 @@ export default function App() {
             <div className="modal-overlay" onClick={() => setShowAddItemModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
                 <h2>{editingItemId ? "Edit Planning Item" : "Add Planning Item"}</h2>
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Task Name</label>
                 <input type="text" placeholder="Task name" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} className="input-field" />
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>📅 Start Date</label>
@@ -1186,7 +1188,7 @@ export default function App() {
                   <option value="completed">Completed</option>
                 </select>
 
-                <label>Owners:</label>
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Owners</label>
                 <div className="checkbox-group">
                   {selectedCampaign.owners.map((owner, idx) => {
                     const ownerEmail = typeof owner === 'object' ? owner.email : owner;
@@ -1219,7 +1221,7 @@ export default function App() {
                   })}
                 </div>
 
-                <label>Participants:</label>
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Participants</label>
                 <div className="checkbox-group">
                   {selectedCampaign.participants.map((p, idx) => {
                     const participantEmail = typeof p === 'object' ? p.email : p;
@@ -1637,8 +1639,13 @@ export default function App() {
             <div className="modal-overlay" onClick={() => setShowAddBudgetModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
                 <h2>{editingItemId ? "Edit Budget Item" : "Add Budget Item"}</h2>
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Description</label>
                 <input type="text" placeholder="Description" value={newBudgetItem.description} onChange={e => setNewBudgetItem({...newBudgetItem, description: e.target.value})} className="input-field" />
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Amount</label>
                 <input type="number" placeholder="Amount" value={newBudgetItem.amount} onChange={e => setNewBudgetItem({...newBudgetItem, amount: e.target.value})} className="input-field" />
+                
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
                 <select value={newBudgetItem.category} onChange={e => setNewBudgetItem({...newBudgetItem, category: e.target.value})} className="input-field">
                   <option value="">-- Select a category --</option>
@@ -1646,6 +1653,7 @@ export default function App() {
                     <option key={cat.id} value={cat.id}>{cat.label}</option>
                   ))}
                 </select>
+                
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Comment</label>
                 <textarea placeholder="Add a comment (optional)" value={newBudgetItem.comment} onChange={e => setNewBudgetItem({...newBudgetItem, comment: e.target.value})} className="input-field" style={{ minHeight: "80px", fontFamily: "inherit", resize: "vertical" }} />
                 <div className="modal-buttons">
@@ -1732,8 +1740,14 @@ export default function App() {
             <div className="modal-overlay" onClick={() => setShowAddGiftModal(false)}>
               <div className="modal" onClick={e => e.stopPropagation()}>
                 <h2>{editingGiftId ? "Edit Gift" : "Add Gift"}</h2>
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Gift Name</label>
                 <input type="text" placeholder="Gift name" value={newGiftItem.name} onChange={e => setNewGiftItem({...newGiftItem, name: e.target.value})} className="input-field" />
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Price</label>
                 <input type="number" placeholder="Price" value={newGiftItem.price} onChange={e => setNewGiftItem({...newGiftItem, price: e.target.value})} className="input-field" />
+                
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Cost</label>
                 <input type="number" placeholder="Cost" value={newGiftItem.cost} onChange={e => setNewGiftItem({...newGiftItem, cost: e.target.value})} className="input-field" />
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
@@ -1744,6 +1758,7 @@ export default function App() {
                   ))}
                 </select>
                 
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Suggested Quantity (optional)</label>
                 <input type="number" placeholder="Suggested Quantity (optional)" value={newGiftItem.suggestedQuantity} onChange={e => setNewGiftItem({...newGiftItem, suggestedQuantity: e.target.value})} className="input-field" />
 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Gift Owner(s):</label>
