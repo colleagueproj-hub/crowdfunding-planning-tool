@@ -155,7 +155,8 @@ export default function App() {
     console.log("Normalized campaigns:", normalized);
     setCampaigns(normalized);
     if (normalized.length > 0 && !selectedCampaign) {
-      setSelectedCampaign(normalized[0]);
+      const defaultCampaign = normalized.find(c => c.name === "Weeping Willow Tree first album and live show") || normalized[0];
+      setSelectedCampaign(defaultCampaign);
     }
   };
 
