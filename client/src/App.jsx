@@ -159,6 +159,106 @@ export default function App() {
     }
   };
 
+  const restoreAlbumPlanningItems = async () => {
+    const planningItems = [
+      { 
+        name: "הקלטות ראשוניות", 
+        startDate: "2026-09-01", 
+        endDate: "2026-09-15", 
+        status: "not-started", 
+        owners: [], 
+        participants: [],
+        reminderEnabled: false,
+        reminderDays: 1,
+        comment: "Initial recording session for album"
+      },
+      { 
+        name: "הקלטות סופיות", 
+        startDate: "2026-09-16", 
+        endDate: "2026-09-30", 
+        status: "not-started", 
+        owners: [], 
+        participants: [],
+        reminderEnabled: false,
+        reminderDays: 1,
+        comment: "Final recording session"
+      },
+      { 
+        name: "מיקס ומאסטור", 
+        startDate: "2026-10-01", 
+        endDate: "2026-10-20", 
+        status: "not-started", 
+        owners: [], 
+        participants: [],
+        reminderEnabled: false,
+        reminderDays: 1,
+        comment: "Mixing and mastering process"
+      },
+      { 
+        name: "עיצוב אלבום ודפוס", 
+        startDate: "2026-10-15", 
+        endDate: "2026-11-05", 
+        status: "not-started", 
+        owners: [], 
+        participants: [],
+        reminderEnabled: false,
+        reminderDays: 1,
+        comment: "Album artwork design and printing"
+      },
+      { 
+        name: "הדפסת מרצ'נדייז", 
+        startDate: "2026-10-20", 
+        endDate: "2026-11-10", 
+        status: "not-started", 
+        owners: [], 
+        participants: [],
+        reminderEnabled: false,
+        reminderDays: 1,
+        comment: "Print merchandise items"
+      },
+      { 
+        name: "הופעה חיה", 
+        startDate: "2026-11-20", 
+        endDate: "2026-11-20", 
+        status: "not-started", 
+        owners: [], 
+        participants: [],
+        reminderEnabled: false,
+        reminderDays: 1,
+        comment: "Live performance event"
+      },
+      { 
+        name: "משלוח סדר אלבום", 
+        startDate: "2026-11-21", 
+        endDate: "2026-11-30", 
+        status: "not-started", 
+        owners: [], 
+        participants: [],
+        reminderEnabled: false,
+        reminderDays: 1,
+        comment: "Fulfillment and shipping of orders"
+      }
+    ];
+
+    const campaign = campaigns.find(c => c.name === "Weeping Willow Tree first album and live show");
+    if (campaign) {
+      campaign.planningItems = planningItems.map((item, idx) => ({
+        id: `plan_${idx}`,
+        ...item
+      }));
+
+      await saveCampaignToSheet(campaign);
+      const updatedCampaigns = campaigns.map(c => c.id === campaign.id ? campaign : c);
+      setCampaigns(updatedCampaigns);
+      if (selectedCampaign?.id === campaign.id) {
+        setSelectedCampaign(campaign);
+      }
+      alert("Planning items restored successfully!");
+    } else {
+      alert("Campaign 'Weeping Willow Tree first album and live show' not found!");
+    }
+  };
+
   const addAlbumGifts = async () => {
     const gifts = [
       // מוסיקה (Music)
@@ -924,6 +1024,7 @@ export default function App() {
           )}
           {isAdmin && selectedCampaign?.name === "Weeping Willow Tree first album and live show" && (
             <>
+              <button onClick={restoreAlbumPlanningItems} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>📋 Restore Planning</button>
               <button onClick={addAlbumBudgetItems} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>📊 Import Album Budget</button>
               <button onClick={addAlbumGifts} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>🎁 Import Album Gifts</button>
             </>
