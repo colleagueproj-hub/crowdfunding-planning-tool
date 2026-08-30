@@ -52,28 +52,74 @@ export async function fetchCampaignsFromSheet() {
 
 export async function saveCampaignToSheet(campaign) {
   try {
-    const url = new URL(APPS_SCRIPT_URL);
-    url.searchParams.append("action", "save");
-    url.searchParams.append("id", campaign.id);
-    url.searchParams.append("data", JSON.stringify(campaign));
-    
-    // Retry logic - try up to 3 times
+    const payload = JSON.stringify({
+      action: "save",
+      id: campaign.id,
+      data: campaign
+    });
+
+    // Prefer POST so large campaigns (budget + gifts + plan) are not truncated by URL length
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const response = await fetch(url.toString(), { method: "GET" });
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: payload,
+          redirect: "follow"
+        });
         const result = await response.json();
-        if (result.action === "save") {
+        if (result.action === "save" || result.success !== false) {
           return true;
         }
       } catch (error) {
-        if (attempt === 3) throw error;
-        // Wait before retrying (exponential backoff: 500ms, 1000ms)
+        // Fallback to GET for older deployments / smaller payloads
+        try {
+          const url = new URL(APPS_SCRIPT_URL);
+          url.searchParams.append("action", "save");
+          url.searchParams.append("id", campaign.id);
+          url.searchParams.append("data", JSON.stringify(campaign));
+          const response = await fetch(url.toString(), { method: "GET" });
+          const result = await response.json();
+          if (result.action === "save") return true;
+        } catch (_) {
+          if (attempt === 3) throw error;
+        }
         await new Promise(resolve => setTimeout(resolve, 500 * attempt));
       }
     }
     return false;
   } catch (error) {
     console.error("Error syncing:", error);
+    return false;
+  }
+}
+
+export async function setPlanningItems(campaignName, items) {
+  try {
+    const payload = JSON.stringify({
+      action: "set_planning_items",
+      campaignName,
+      items
+    });
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: payload,
+      redirect: "follow"
+    });
+    const result = await response.json();
+    if (result.success) return true;
+
+    // Fallback GET for older deployments
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append("action", "set_planning_items");
+    url.searchParams.append("campaignName", campaignName);
+    url.searchParams.append("items", JSON.stringify(items));
+    const getResp = await fetch(url.toString(), { method: "GET" });
+    const getResult = await getResp.json();
+    return !!getResult.success;
+  } catch (error) {
+    console.error("Error setting planning items:", error);
     return false;
   }
 }

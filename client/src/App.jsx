@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./styles.css";
 import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
-import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser, addBudgetItems } from "./googleSheetsUtils";
+import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser, addBudgetItems, setPlanningItems } from "./googleSheetsUtils";
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -148,11 +148,84 @@ export default function App() {
     }
   };
 
+  const getAlbumDefaultPlanningItems = () => [
+    {
+      id: "item_1787744718226",
+      name: "הגדרת נראטיב לקמפיין",
+      startDate: "2026-08-29",
+      endDate: "2026-08-30",
+      status: "not-started",
+      owners: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      participants: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      reminderEnabled: true,
+      reminderDays: 1
+    },
+    {
+      id: "item_1787744659788",
+      name: "הגדרת תשורות ראשונית",
+      startDate: "2026-08-29",
+      endDate: "2026-08-31",
+      status: "not-started",
+      owners: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      participants: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      reminderEnabled: true,
+      reminderDays: 1
+    },
+    {
+      id: "item_1787744667297",
+      name: "סגירת רשימת התשורות",
+      startDate: "2026-08-31",
+      endDate: "2026-09-06",
+      status: "not-started",
+      owners: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      participants: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      reminderEnabled: true,
+      reminderDays: 1
+    },
+    {
+      id: "item_1787744674125",
+      name: "עידכון רשימת תשורות - תזכורת",
+      startDate: "2026-09-03",
+      endDate: "2026-09-03",
+      status: "not-started",
+      owners: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      participants: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      reminderEnabled: true,
+      reminderDays: 3
+    },
+    {
+      id: "item_1787745320491",
+      name: "לשלוח את האפליקציה לגלי",
+      startDate: "2026-08-28",
+      endDate: "2026-08-28",
+      status: "not-started",
+      owners: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      participants: [{ name: "Amit", email: "colleagueproj@gmail.com" }],
+      reminderEnabled: true,
+      reminderDays: 1
+    }
+  ];
+
   const loadCampaigns = async () => {
     const loaded = await fetchCampaignsFromSheet(getDefaultSheetId());
     console.log("Loaded campaigns:", loaded);
-    const normalized = (Array.isArray(loaded) ? loaded : []).map(normalizeCampaign);
+    let normalized = (Array.isArray(loaded) ? loaded : []).map(normalizeCampaign);
     console.log("Normalized campaigns:", normalized);
+
+    // Auto-restore album plan if it was wiped (recovered from original campaign data)
+    const albumIdx = normalized.findIndex(c => c.name === "Weeping Willow Tree first album and live show");
+    if (albumIdx >= 0 && (!normalized[albumIdx].planningItems || normalized[albumIdx].planningItems.length === 0)) {
+      const planningItems = getAlbumDefaultPlanningItems();
+      const restored = {
+        ...normalized[albumIdx],
+        planningItems
+      };
+      normalized = normalized.map((c, i) => i === albumIdx ? restored : c);
+      // Prefer targeted planning update (avoids wiping budget/gifts via truncated URL saves)
+      const ok = await setPlanningItems(restored.name, planningItems);
+      if (!ok) await saveCampaignToSheet(restored);
+    }
+
     setCampaigns(normalized);
     if (normalized.length > 0 && !selectedCampaign) {
       const defaultCampaign = normalized.find(c => c.name === "Weeping Willow Tree first album and live show") || normalized[0];
@@ -161,98 +234,16 @@ export default function App() {
   };
 
   const restoreAlbumPlanningItems = async () => {
-    const planningItems = [
-      { 
-        name: "הקלטות ראשוניות", 
-        startDate: "2026-09-01", 
-        endDate: "2026-09-15", 
-        status: "not-started", 
-        owners: [], 
-        participants: [],
-        reminderEnabled: false,
-        reminderDays: 1,
-        comment: "Initial recording session for album"
-      },
-      { 
-        name: "הקלטות סופיות", 
-        startDate: "2026-09-16", 
-        endDate: "2026-09-30", 
-        status: "not-started", 
-        owners: [], 
-        participants: [],
-        reminderEnabled: false,
-        reminderDays: 1,
-        comment: "Final recording session"
-      },
-      { 
-        name: "מיקס ומאסטור", 
-        startDate: "2026-10-01", 
-        endDate: "2026-10-20", 
-        status: "not-started", 
-        owners: [], 
-        participants: [],
-        reminderEnabled: false,
-        reminderDays: 1,
-        comment: "Mixing and mastering process"
-      },
-      { 
-        name: "עיצוב אלבום ודפוס", 
-        startDate: "2026-10-15", 
-        endDate: "2026-11-05", 
-        status: "not-started", 
-        owners: [], 
-        participants: [],
-        reminderEnabled: false,
-        reminderDays: 1,
-        comment: "Album artwork design and printing"
-      },
-      { 
-        name: "הדפסת מרצ'נדייז", 
-        startDate: "2026-10-20", 
-        endDate: "2026-11-10", 
-        status: "not-started", 
-        owners: [], 
-        participants: [],
-        reminderEnabled: false,
-        reminderDays: 1,
-        comment: "Print merchandise items"
-      },
-      { 
-        name: "הופעה חיה", 
-        startDate: "2026-11-20", 
-        endDate: "2026-11-20", 
-        status: "not-started", 
-        owners: [], 
-        participants: [],
-        reminderEnabled: false,
-        reminderDays: 1,
-        comment: "Live performance event"
-      },
-      { 
-        name: "משלוח סדר אלבום", 
-        startDate: "2026-11-21", 
-        endDate: "2026-11-30", 
-        status: "not-started", 
-        owners: [], 
-        participants: [],
-        reminderEnabled: false,
-        reminderDays: 1,
-        comment: "Fulfillment and shipping of orders"
-      }
-    ];
-
+    const planningItems = getAlbumDefaultPlanningItems();
     const campaign = campaigns.find(c => c.name === "Weeping Willow Tree first album and live show");
     if (campaign) {
-      campaign.planningItems = planningItems.map((item, idx) => ({
-        id: `plan_${idx}`,
-        ...item
-      }));
-
-      await saveCampaignToSheet(campaign);
-      const updatedCampaigns = campaigns.map(c => c.id === campaign.id ? campaign : c);
+      const updated = { ...campaign, planningItems };
+      const ok = await setPlanningItems(campaign.name, planningItems);
+      if (!ok) await saveCampaignToSheet(updated);
+      const updatedCampaigns = campaigns.map(c => c.id === campaign.id ? updated : c);
       setCampaigns(updatedCampaigns);
       if (selectedCampaign?.id === campaign.id) {
-        setSelectedCampaign(campaign);
+        setSelectedCampaign(updated);
       }
       alert("Planning items restored successfully!");
     } else {
