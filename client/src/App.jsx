@@ -29,6 +29,7 @@ export default function App() {
   const [newBudgetItem, setNewBudgetItem] = useState({
     description: "",
     amount: "",
+    quantity: "1",
     category: "recordings",
     comment: "",
   });
@@ -711,10 +712,15 @@ export default function App() {
       return;
     }
 
+    const quantity = newBudgetItem.quantity !== "" && newBudgetItem.quantity != null
+      ? parseFloat(newBudgetItem.quantity)
+      : 1;
+
     const budgetItem = {
       id: editingItemId || `budget_${Date.now()}`,
       description: newBudgetItem.description.trim(),
       amount: parseFloat(newBudgetItem.amount),
+      quantity: Number.isNaN(quantity) ? 1 : quantity,
       category: newBudgetItem.category,
       comment: newBudgetItem.comment || "",
     };
@@ -729,7 +735,7 @@ export default function App() {
     // Optimistic UI: update immediately, then sync in background
     setCampaigns(prev => prev.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
-    setNewBudgetItem({ description: "", amount: "", category: "recordings", comment: "" });
+    setNewBudgetItem({ description: "", amount: "", quantity: "1", category: "recordings", comment: "" });
     setEditingItemId(null);
     setShowAddBudgetModal(false);
     setSyncStatus("⏳ Syncing...");
@@ -745,7 +751,13 @@ export default function App() {
   };
 
   const handleEditBudgetItem = (item) => {
-    setNewBudgetItem({ description: item.description, amount: item.amount.toString(), category: item.category, comment: item.comment || "" });
+    setNewBudgetItem({
+      description: item.description,
+      amount: item.amount != null ? String(item.amount) : "",
+      quantity: item.quantity != null ? String(item.quantity) : "1",
+      category: item.category,
+      comment: item.comment || ""
+    });
     setEditingItemId(item.id);
     setShowAddBudgetModal(true);
   };
@@ -977,7 +989,11 @@ export default function App() {
     );
   }
 
-  const totalBudget = (selectedCampaign?.budgetItems || []).reduce((sum, item) => sum + (item?.amount || 0), 0);
+  const totalBudget = (selectedCampaign?.budgetItems || []).reduce((sum, item) => {
+    const price = item?.amount || 0;
+    const qty = item?.quantity != null && item.quantity !== "" ? Number(item.quantity) : 1;
+    return sum + (price * (Number.isNaN(qty) ? 1 : qty));
+  }, 0);
 
   return (
     <div className="container">
@@ -1690,7 +1706,11 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <button onClick={() => setShowAddBudgetModal(true)} className="btn-primary">
+                <button onClick={() => {
+                  setNewBudgetItem({ description: "", amount: "", quantity: "1", category: "recordings", comment: "" });
+                  setEditingItemId(null);
+                  setShowAddBudgetModal(true);
+                }} className="btn-primary">
                   + Add Budget Item
                 </button>
               )}
@@ -1729,6 +1749,7 @@ export default function App() {
                 <th>Description</th>
                 <th>Category</th>
                 <th>Price</th>
+                <th>Quantity</th>
                 <th>Comment</th>
                 {canEdit && <th>Actions</th>}
               </tr>
@@ -1738,7 +1759,8 @@ export default function App() {
                 <tr key={item.id}>
                   <td>{item.description}</td>
                   <td>{getCategoryLabel(item.category)}</td>
-                  <td>{selectedCampaign.currency} {item.amount.toFixed(2)}</td>
+                  <td>{selectedCampaign.currency} {(item.amount || 0).toFixed(2)}</td>
+                  <td>{item.quantity != null ? item.quantity : 1}</td>
                   <td>{item.comment || "-"}</td>
                   {canEdit && (
                     <td>
@@ -1761,6 +1783,9 @@ export default function App() {
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Price</label>
                 <input type="number" placeholder="Price" value={newBudgetItem.amount} onChange={e => setNewBudgetItem({...newBudgetItem, amount: e.target.value})} className="input-field" />
+
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Quantity</label>
+                <input type="number" min="0" step="any" placeholder="Quantity" value={newBudgetItem.quantity} onChange={e => setNewBudgetItem({...newBudgetItem, quantity: e.target.value})} className="input-field" />
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
                 <select value={newBudgetItem.category} onChange={e => setNewBudgetItem({...newBudgetItem, category: e.target.value})} className="input-field">
