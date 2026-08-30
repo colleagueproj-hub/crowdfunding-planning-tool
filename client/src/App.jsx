@@ -77,6 +77,7 @@ export default function App() {
   const [allUsers, setAllUsers] = useState([]);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(null); // "owner" or "participant"
+  const [budgetCommission, setBudgetCommission] = useState(10); // Commission percentage, default 10%
 
   const getDismissedNotifications = () => {
     const dismissed = localStorage.getItem("dismissed_notifications");
@@ -1478,7 +1479,29 @@ export default function App() {
           )}
 
           <div className="budget-summary">
-            <h3>Total Budget: {selectedCampaign?.currency} {totalBudget.toFixed(2)}</h3>
+            <div style={{ display: "flex", gap: "30px", alignItems: "center", padding: "15px", background: "#3a4a3a", borderRadius: "6px" }}>
+              <div>
+                <label style={{ color: "#d4af37", fontWeight: "600", fontSize: "12px" }}>Budget</label>
+                <div style={{ fontSize: "18px", fontWeight: "bold", color: "#ffffff" }}>{selectedCampaign?.currency} {totalBudget.toFixed(2)}</div>
+              </div>
+              
+              <div>
+                <label style={{ color: "#d4af37", fontWeight: "600", fontSize: "12px" }}>Commission %</label>
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="100" 
+                  value={budgetCommission}
+                  onChange={e => setBudgetCommission(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                  style={{ width: "80px", padding: "8px", borderRadius: "4px", border: "1px solid #d4af37", background: "#2a3a2a", color: "#d4af37", fontWeight: "600", fontSize: "16px" }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ color: "#d4af37", fontWeight: "600", fontSize: "12px" }}>Total Budget</label>
+                <div style={{ fontSize: "18px", fontWeight: "bold", color: "#FFD700" }}>{selectedCampaign?.currency} {(totalBudget + (totalBudget * budgetCommission / 100)).toFixed(2)}</div>
+              </div>
+            </div>
           </div>
 
           <table className="items-table">
