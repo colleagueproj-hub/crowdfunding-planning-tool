@@ -1044,13 +1044,6 @@ export default function App() {
           {isAdmin && (
             <button onClick={() => { loadAllUsers(); setShowAdminPanel(true); }} className="btn-small" style={{ background: "#8B4513", borderColor: "#d4af37" }}>👤 Admin Panel</button>
           )}
-          {isAdmin && selectedCampaign?.name === "Weeping Willow Tree first album and live show" && (
-            <>
-              <button onClick={restoreAlbumPlanningItems} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>📋 Restore Planning</button>
-              <button onClick={addAlbumBudgetItems} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>📊 Import Album Budget</button>
-              <button onClick={addAlbumGifts} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>🎁 Import Album Gifts</button>
-            </>
-          )}
           <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
         </div>
       </div>
@@ -2155,6 +2148,35 @@ export default function App() {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div style={{ marginBottom: "30px", paddingTop: "10px", borderTop: "1px solid #555" }}>
+              <h3 style={{ color: "#d4af37", marginBottom: "10px" }}>Album Import Tools</h3>
+              <p style={{ color: "#b0b0b0", fontSize: "13px", marginBottom: "15px" }}>
+                These actions replace existing content on the &quot;Weeping Willow Tree first album and live show&quot; campaign.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <button
+                  onClick={() => {
+                    if (!window.confirm("Are you sure you want to override the existing content?")) return;
+                    addAlbumBudgetItems();
+                  }}
+                  className="btn-primary"
+                  style={{ background: "#4a6a4a", borderColor: "#d4af37" }}
+                >
+                  📊 Import Album Budget
+                </button>
+                <button
+                  onClick={() => {
+                    if (!window.confirm("Are you sure you want to override the existing content?")) return;
+                    addAlbumGifts();
+                  }}
+                  className="btn-primary"
+                  style={{ background: "#4a6a4a", borderColor: "#d4af37" }}
+                >
+                  🎁 Import Album Gifts
+                </button>
+              </div>
             </div>
 
             <div className="modal-buttons" style={{ marginTop: "20px" }}>
