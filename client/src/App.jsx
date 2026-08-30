@@ -1493,13 +1493,13 @@ export default function App() {
                   max="100" 
                   value={budgetCommission}
                   onChange={e => setBudgetCommission(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
-                  style={{ width: "80px", padding: "8px", borderRadius: "4px", border: "1px solid #d4af37", background: "#2a3a2a", color: "#d4af37", fontWeight: "600", fontSize: "16px" }}
+                  style={{ width: "80px", padding: "8px", borderRadius: "4px", border: "1px solid #d4af37", background: "#2a3a2a", color: "#ffffff", fontWeight: "600", fontSize: "16px" }}
                 />
               </div>
               
               <div>
                 <label style={{ color: "#d4af37", fontWeight: "600", fontSize: "12px" }}>Total Budget</label>
-                <div style={{ fontSize: "18px", fontWeight: "bold", color: "#FFD700" }}>{selectedCampaign?.currency} {(totalBudget + (totalBudget * budgetCommission / 100)).toFixed(2)}</div>
+                <div style={{ fontSize: "18px", fontWeight: "bold", color: "#ffffff" }}>{selectedCampaign?.currency} {(totalBudget + (totalBudget * budgetCommission / 100)).toFixed(2)}</div>
               </div>
             </div>
           </div>
