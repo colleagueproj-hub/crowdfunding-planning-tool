@@ -159,6 +159,53 @@ export default function App() {
     }
   };
 
+  const addAlbumGifts = async () => {
+    const gifts = [
+      // מוסיקה (Music)
+      { name: "פוסטר אלבום", category: "music", price: 45, cost: 0, suggestedQuantity: 50, comment: "גודל 35x40 סמ" },
+      { name: "חולצות", category: "music", price: 100, cost: 0, suggestedQuantity: 80, comment: "" },
+      { name: "דיסק", category: "music", price: 70, cost: 0, suggestedQuantity: 100, comment: "כולל אריזה (קופסת Jewel Case מלאה + חוברת/עטיפה)" },
+      { name: "ויניל + פוסטר תקליט", category: "music", price: 265, cost: 0, suggestedQuantity: 50, comment: "כולל פוסטר + מילים" },
+      { name: "ספרון מילים עם הקדשה אישית", category: "music", price: 65, cost: 0, suggestedQuantity: 80, comment: "" },
+      { name: "ספרון אקורדים ומילים עם הקדשה אישית", category: "music", price: 85, cost: 0, suggestedQuantity: 50, comment: "" },
+      
+      // פריטים (Other)
+      { name: "פסלון עץ הערבה הבוכייה מברזל (עם הקדשה אישית)", category: "other", price: 450, cost: 0, suggestedQuantity: 15, comment: "" },
+      
+      // חבילות (Packs)
+      { name: "דיסק + ספרון מילים", category: "packs", price: 30, cost: 30, suggestedQuantity: 0, comment: "חבילת המוסיקה" },
+      { name: "דיסק + חולצה + פוסטר", category: "packs", price: 20, cost: 20, suggestedQuantity: 0, comment: "חבילת המרצ״" },
+      { name: "ויניל + חולצה + פוסטר", category: "packs", price: 15, cost: 15, suggestedQuantity: 0, comment: "חבילת האספנים" },
+      { name: "פסלון ברזל + ספר מילים/ואקורדים + פוסטר", category: "packs", price: 10, cost: 10, suggestedQuantity: 0, comment: "חבילת ה-Super-Fan (לחובבי פריטי האספנות הפיזיים)" },
+      { name: "ויניל + דיסק + פוסטר", category: "packs", price: 15, cost: 15, suggestedQuantity: 0, comment: "חבילת ה\"אנלוג והדיגיטל\" (חבילת השמע השלמה)" },
+      { name: "פסלון ברזל + ויניל + דיסק + חולצה + ספרון מילים ואקורדים + פוסטר אלבום", category: "packs", price: 5, cost: 5, suggestedQuantity: 0, comment: "חבילת ה-VIP הטוטאלית (חבילת \"הכל מהכל\")" }
+    ];
+    
+    const campaign = campaigns.find(c => c.name === "Weeping Willow Tree first album and live show");
+    if (campaign) {
+      campaign.gifts = gifts.map((g, idx) => ({
+        id: `gift_${idx}`,
+        name: g.name,
+        category: g.category,
+        price: g.price,
+        cost: g.cost,
+        owners: [],
+        suggestedQuantity: g.suggestedQuantity || 0,
+        comment: g.comment || ""
+      }));
+      
+      await saveCampaignToSheet(campaign);
+      const updatedCampaigns = campaigns.map(c => c.id === campaign.id ? campaign : c);
+      setCampaigns(updatedCampaigns);
+      if (selectedCampaign?.id === campaign.id) {
+        setSelectedCampaign(campaign);
+      }
+      alert("All gifts added successfully!");
+    } else {
+      alert("Campaign 'Weeping Willow Tree first album and live show' not found!");
+    }
+  };
+
   const addAlbumBudgetItems = async () => {
     const budgetItems = [
       { id: "budget_ngnim", description: "נגנים", amount: 5000, category: "הקלטות סופיות", comment: "" },
@@ -876,7 +923,10 @@ export default function App() {
             <button onClick={() => { loadAllUsers(); setShowAdminPanel(true); }} className="btn-small" style={{ background: "#8B4513", borderColor: "#d4af37" }}>👤 Admin Panel</button>
           )}
           {isAdmin && selectedCampaign?.name === "Weeping Willow Tree first album and live show" && (
-            <button onClick={addAlbumBudgetItems} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>📊 Import Album Budget</button>
+            <>
+              <button onClick={addAlbumBudgetItems} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>📊 Import Album Budget</button>
+              <button onClick={addAlbumGifts} className="btn-small" style={{ background: "#4a6a4a", borderColor: "#d4af37" }}>🎁 Import Album Gifts</button>
+            </>
           )}
           <button onClick={async () => { setSyncStatus("⏳ Syncing..."); const success = await saveCampaignToSheet(selectedCampaign); setSyncStatus(success ? "✓ Synced!" : "❌ Sync failed"); setTimeout(() => setSyncStatus("✓ Synced"), 3000); }} className="btn-small">🔄 Sync Now</button>
         </div>
