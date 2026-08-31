@@ -1960,7 +1960,7 @@ export default function App() {
                   const unitCost = getGiftUnitCost(gift);
                   const qty = gift.suggestedQuantity ? Number(gift.suggestedQuantity) : 0;
                   const unitPrice = Number(gift.price) || 0;
-                  totalPrices += unitPrice;
+                  totalPrices += qty ? (unitPrice * qty) : 0;
                   totalCosts += qty ? (unitCost * qty) : unitCost;
                   totalProfit += qty ? ((unitPrice - unitCost) * qty) : 0;
                 });
