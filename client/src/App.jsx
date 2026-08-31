@@ -1955,15 +1955,16 @@ export default function App() {
                 const currency = selectedCampaign?.currency || "";
                 let totalPrices = 0;
                 let totalCosts = 0;
-                let totalProfit = 0;
                 gifts.forEach(gift => {
                   const unitCost = getGiftUnitCost(gift);
                   const qty = gift.suggestedQuantity ? Number(gift.suggestedQuantity) : 0;
                   const unitPrice = Number(gift.price) || 0;
-                  totalPrices += qty ? (unitPrice * qty) : 0;
-                  totalCosts += qty ? (unitCost * qty) : unitCost;
-                  totalProfit += qty ? ((unitPrice - unitCost) * qty) : 0;
+                  if (qty) {
+                    totalPrices += unitPrice * qty;
+                    totalCosts += unitCost * qty;
+                  }
                 });
+                const totalProfit = totalPrices - totalCosts;
                 return (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "24px", alignItems: "center", padding: "10px 16px", background: "#3a4a3a", borderRadius: "6px", border: "1px solid #d4af37" }}>
                     <div>
