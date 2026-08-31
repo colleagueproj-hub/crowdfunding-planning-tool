@@ -898,8 +898,8 @@ export default function App() {
       alert("Please add at least 1 cost item");
       return;
     }
-    if (costItemsRaw.length > 4) {
-      alert("You can add up to 4 cost items");
+    if (costItemsRaw.length > 7) {
+      alert("You can add up to 7 cost items");
       return;
     }
     for (let i = 0; i < costItemsRaw.length; i++) {
@@ -984,7 +984,7 @@ export default function App() {
     let costItems;
 
     if (Array.isArray(gift.costItems) && gift.costItems.length > 0) {
-      costItems = gift.costItems.slice(0, 4).map(c => {
+      costItems = gift.costItems.slice(0, 7).map(c => {
         const linked = c.budgetItemId || (c.source !== "manual" ? c.source : "");
         const budgetItem = linked ? merchandiseItems.find(b => b.id === linked) : null;
         if (budgetItem) {
@@ -2014,7 +2014,7 @@ export default function App() {
                 <input type="number" placeholder="Price" value={newGiftItem.price} onChange={e => setNewGiftItem({...newGiftItem, price: e.target.value})} className="input-field" />
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>
-                  Cost items (up to 4)
+                  Cost items (up to 7)
                 </label>
                 {(newGiftItem.costItems || []).map((costItem, idx) => (
                   <div key={idx} style={{ marginBottom: "12px", padding: "12px", background: "#2a3a2a", borderRadius: "6px", border: "1px solid #555" }}>
@@ -2083,7 +2083,7 @@ export default function App() {
                     )}
                   </div>
                 ))}
-                {(newGiftItem.costItems || []).length < 4 && (
+                {(newGiftItem.costItems || []).length < 7 && (
                   <button
                     type="button"
                     className="btn-small"
