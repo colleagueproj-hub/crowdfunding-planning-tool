@@ -1959,9 +1959,10 @@ export default function App() {
                 gifts.forEach(gift => {
                   const unitCost = getGiftUnitCost(gift);
                   const qty = gift.suggestedQuantity ? Number(gift.suggestedQuantity) : 0;
-                  totalPrices += Number(gift.price) || 0;
+                  const unitPrice = Number(gift.price) || 0;
+                  totalPrices += unitPrice;
                   totalCosts += qty ? (unitCost * qty) : unitCost;
-                  totalProfit += qty ? ((Number(gift.price) || 0) * qty) : 0;
+                  totalProfit += qty ? ((unitPrice - unitCost) * qty) : 0;
                 });
                 return (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "24px", alignItems: "center", padding: "10px 16px", background: "#3a4a3a", borderRadius: "6px", border: "1px solid #d4af37" }}>
@@ -2002,8 +2003,9 @@ export default function App() {
               {selectedCampaign?.gifts && selectedCampaign.gifts.length > 0 ? (
                 selectedCampaign.gifts.map(gift => {
                   const unitCost = getGiftUnitCost(gift);
-                  const estimatedProfit = gift.suggestedQuantity ? (gift.price * gift.suggestedQuantity) : 0;
-                  const totalCost = gift.suggestedQuantity ? (unitCost * gift.suggestedQuantity) : unitCost;
+                  const qty = gift.suggestedQuantity ? Number(gift.suggestedQuantity) : 0;
+                  const estimatedProfit = qty ? ((Number(gift.price) || 0) - unitCost) * qty : 0;
+                  const totalCost = qty ? (unitCost * qty) : unitCost;
                   return (
                   <tr key={gift.id}>
                     <td>{gift.name}</td>
