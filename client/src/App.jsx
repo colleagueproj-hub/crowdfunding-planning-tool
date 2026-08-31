@@ -1992,6 +1992,7 @@ export default function App() {
                 <th>Price</th>
                 <th>Cost</th>
                 <th>Suggested Quantity</th>
+                <th>Total Price</th>
                 <th>Total Cost</th>
                 <th>Estimated Profit</th>
                 <th>Owners</th>
@@ -2004,15 +2005,18 @@ export default function App() {
                 selectedCampaign.gifts.map(gift => {
                   const unitCost = getGiftUnitCost(gift);
                   const qty = gift.suggestedQuantity ? Number(gift.suggestedQuantity) : 0;
-                  const estimatedProfit = qty ? ((Number(gift.price) || 0) - unitCost) * qty : 0;
+                  const unitPrice = Number(gift.price) || 0;
+                  const totalPrice = qty ? (unitPrice * qty) : 0;
+                  const estimatedProfit = qty ? (unitPrice - unitCost) * qty : 0;
                   const totalCost = qty ? (unitCost * qty) : unitCost;
                   return (
                   <tr key={gift.id}>
                     <td>{gift.name}</td>
                     <td>{getCategoryLabel(gift.category, giftCategories)}</td>
-                    <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
+                    <td>{selectedCampaign.currency} {unitPrice.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {unitCost.toFixed(2)}</td>
                     <td>{gift.suggestedQuantity || "-"}</td>
+                    <td>{selectedCampaign.currency} {totalPrice.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {totalCost.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {estimatedProfit.toFixed(2)}</td>
                     <td>{(gift.owners || []).map(o => typeof o === "object" ? (o.name || o.email) : o).filter(Boolean).join(", ") || "-"}</td>
@@ -2028,7 +2032,7 @@ export default function App() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={canEdit ? 10 : 9} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
+                  <td colSpan={canEdit ? 11 : 10} style={{ textAlign: "center", color: "#d4af37" }}>No gifts added yet</td>
                 </tr>
               )}
             </tbody>
