@@ -1933,24 +1933,54 @@ export default function App() {
 
       {activeTab === "gifts" && (
         <div className="tab-content">
-          {canEdit && (
-            <>
-              {selectedCampaign?.participants.length === 0 ? (
-                <div style={{ background: "#4a4a4a", padding: "15px", borderRadius: "6px", marginBottom: "20px", border: "2px solid #d4af37" }}>
-                  <p style={{ color: "#d4af37", fontWeight: "600", marginBottom: "10px" }}>⚠️ Before adding gifts, please:</p>
-                  <ul style={{ color: "#ffffff", marginLeft: "20px", marginBottom: "10px" }}>
-                    <li>Add at least 1 participant in Campaign Settings</li>
-                  </ul>
-                  <button onClick={() => setShowCampaignSettings(true)} className="btn-primary">
-                    ⚙️ Go to Campaign Settings
-                  </button>
-                </div>
-              ) : (
+          {canEdit && selectedCampaign?.participants.length === 0 ? (
+            <div style={{ background: "#4a4a4a", padding: "15px", borderRadius: "6px", marginBottom: "20px", border: "2px solid #d4af37" }}>
+              <p style={{ color: "#d4af37", fontWeight: "600", marginBottom: "10px" }}>⚠️ Before adding gifts, please:</p>
+              <ul style={{ color: "#ffffff", marginLeft: "20px", marginBottom: "10px" }}>
+                <li>Add at least 1 participant in Campaign Settings</li>
+              </ul>
+              <button onClick={() => setShowCampaignSettings(true)} className="btn-primary">
+                ⚙️ Go to Campaign Settings
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
+              {canEdit && (
                 <button onClick={() => { setNewGiftItem(emptyGiftForm()); setEditingGiftId(null); setShowAddGiftModal(true); }} className="btn-primary">
                   + Add Gift
                 </button>
               )}
-            </>
+              {(() => {
+                const gifts = selectedCampaign?.gifts || [];
+                const currency = selectedCampaign?.currency || "";
+                let totalPrices = 0;
+                let totalCosts = 0;
+                let totalProfit = 0;
+                gifts.forEach(gift => {
+                  const unitCost = getGiftUnitCost(gift);
+                  const qty = gift.suggestedQuantity ? Number(gift.suggestedQuantity) : 0;
+                  totalPrices += Number(gift.price) || 0;
+                  totalCosts += qty ? (unitCost * qty) : unitCost;
+                  totalProfit += qty ? ((Number(gift.price) || 0) * qty) : 0;
+                });
+                return (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "24px", alignItems: "center", padding: "10px 16px", background: "#3a4a3a", borderRadius: "6px", border: "1px solid #d4af37" }}>
+                    <div>
+                      <div style={{ color: "#d4af37", fontSize: "12px", fontWeight: "600" }}>Total Gifts Price</div>
+                      <div style={{ color: "#ffffff", fontWeight: "700", fontSize: "16px" }}>{currency} {totalPrices.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: "#d4af37", fontSize: "12px", fontWeight: "600" }}>Total Costs</div>
+                      <div style={{ color: "#ffffff", fontWeight: "700", fontSize: "16px" }}>{currency} {totalCosts.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: "#d4af37", fontSize: "12px", fontWeight: "600" }}>Total Profit</div>
+                      <div style={{ color: "#ffffff", fontWeight: "700", fontSize: "16px" }}>{currency} {totalProfit.toFixed(2)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           )}
 
           <table className="items-table">
