@@ -1991,8 +1991,8 @@ export default function App() {
                 <th>Category</th>
                 <th>Price</th>
                 <th>Cost</th>
-                <th>Total Cost</th>
                 <th>Suggested Quantity</th>
+                <th>Total Cost</th>
                 <th>Estimated Profit</th>
                 <th>Owners</th>
                 <th>Comment</th>
@@ -2012,8 +2012,8 @@ export default function App() {
                     <td>{getCategoryLabel(gift.category, giftCategories)}</td>
                     <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {unitCost.toFixed(2)}</td>
-                    <td>{selectedCampaign.currency} {totalCost.toFixed(2)}</td>
                     <td>{gift.suggestedQuantity || "-"}</td>
+                    <td>{selectedCampaign.currency} {totalCost.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {estimatedProfit.toFixed(2)}</td>
                     <td>{(gift.owners || []).map(o => typeof o === "object" ? (o.name || o.email) : o).filter(Boolean).join(", ") || "-"}</td>
                     <td>{gift.comment || "-"}</td>
