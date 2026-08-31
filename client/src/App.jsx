@@ -121,13 +121,13 @@ export default function App() {
 
   const getGiftUnitCost = (gift) => {
     if (Array.isArray(gift?.costItems) && gift.costItems.length > 0) {
-      return gift.costItems.reduce((sum, c) => sum + (parseFloat(c.cost) || 0), 0);
+      return gift.costItems.reduce((sum, c) => sum + (Number(c.cost) || 0), 0);
     }
     return Number(gift?.cost) || 0;
   };
 
   const sumCostItems = (costItems) =>
-    (costItems || []).reduce((sum, c) => sum + (parseFloat(c.cost) || 0), 0);
+    (costItems || []).reduce((sum, c) => sum + (Number(c.cost) || 0), 0);
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -928,20 +928,24 @@ export default function App() {
     const costItems = costItemsRaw.map(c => {
       const isManual = c.source === "manual";
       const budgetItem = !isManual ? merchandiseItems.find(b => b.id === c.source || b.id === c.budgetItemId) : null;
+      const lineCost = isManual
+        ? (Number(c.cost) || 0)
+        : (Number(budgetItem?.amount ?? c.cost) || 0);
       return {
         source: isManual ? "manual" : (c.source || c.budgetItemId),
         budgetItemId: isManual ? "" : (c.budgetItemId || c.source || ""),
         label: isManual ? (c.label || "Manual") : (budgetItem?.description || c.label || ""),
-        cost: parseFloat(c.cost) || 0,
+        cost: lineCost,
       };
     });
-    const totalCost = sumCostItems(costItems);
+    // Gift Cost is always the sum of all cost items
+    const cost = sumCostItems(costItems);
 
     const gift = {
       id: editingGiftId || `gift_${Date.now()}`,
       name,
       price: parseFloat(priceRaw),
-      cost: totalCost,
+      cost,
       costItems,
       category: newGiftItem.category || "",
       owners: giftOwners,
@@ -2097,8 +2101,14 @@ export default function App() {
                     No budget items in מרצ'נדייז (Merchandise). Use manual entry, or add merchandise items in Budget.
                   </p>
                 )}
-                <div className="input-field" style={{ background: "#2a2a2a", color: "#ffffff", marginBottom: "10px" }}>
-                  Total Cost: {selectedCampaign.currency} {sumCostItems(newGiftItem.costItems).toFixed(2)}
+                <div style={{ marginBottom: "10px" }}>
+                  <label style={{ display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Cost</label>
+                  <div className="input-field" style={{ background: "#2a2a2a", color: "#ffffff", fontWeight: "700", fontSize: "16px" }}>
+                    {selectedCampaign.currency} {sumCostItems(newGiftItem.costItems).toFixed(2)}
+                  </div>
+                  <p style={{ color: "#b0b0b0", fontSize: "12px", marginTop: "6px" }}>
+                    Cost = sum of the cost items above
+                  </p>
                 </div>
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
