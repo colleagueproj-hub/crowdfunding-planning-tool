@@ -1922,7 +1922,7 @@ export default function App() {
                     <td>{selectedCampaign.currency} {totalCost.toFixed(2)}</td>
                     <td>{gift.suggestedQuantity || "-"}</td>
                     <td>{selectedCampaign.currency} {estimatedProfit.toFixed(2)}</td>
-                    <td>{gift.owners.join(", ")}</td>
+                    <td>{(gift.owners || []).map(o => typeof o === "object" ? (o.name || o.email) : o).filter(Boolean).join(", ") || "-"}</td>
                     <td>{gift.comment || "-"}</td>
                     {canEdit && (
                       <td>
