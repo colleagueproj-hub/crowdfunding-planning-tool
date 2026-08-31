@@ -86,9 +86,7 @@ export default function App() {
   const [newGiftItem, setNewGiftItem] = useState({
     name: "",
     price: "",
-    cost: "",
-    costSource: "manual", // "manual" or budget item id
-    costBudgetItemId: "",
+    costItems: [{ source: "manual", budgetItemId: "", cost: "" }],
     category: "",
     owners: [],
     comment: "",
@@ -98,9 +96,7 @@ export default function App() {
   const emptyGiftForm = () => ({
     name: "",
     price: "",
-    cost: "",
-    costSource: "manual",
-    costBudgetItemId: "",
+    costItems: [{ source: "manual", budgetItemId: "", cost: "" }],
     category: "",
     owners: [],
     comment: "",
@@ -122,6 +118,16 @@ export default function App() {
   const getMerchandiseBudgetItems = () => {
     return (selectedCampaign?.budgetItems || []).filter(item => isMerchandiseBudgetCategory(item.category));
   };
+
+  const getGiftUnitCost = (gift) => {
+    if (Array.isArray(gift?.costItems) && gift.costItems.length > 0) {
+      return gift.costItems.reduce((sum, c) => sum + (parseFloat(c.cost) || 0), 0);
+    }
+    return Number(gift?.cost) || 0;
+  };
+
+  const sumCostItems = (costItems) =>
+    (costItems || []).reduce((sum, c) => sum + (parseFloat(c.cost) || 0), 0);
   const [showAddGiftModal, setShowAddGiftModal] = useState(false);
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -876,10 +882,9 @@ export default function App() {
 
     const name = (newGiftItem.name || "").trim();
     const priceRaw = newGiftItem.price;
-    const costRaw = newGiftItem.cost;
     const priceOk = priceRaw !== "" && priceRaw !== null && priceRaw !== undefined && !Number.isNaN(parseFloat(priceRaw));
-    const costOk = costRaw !== "" && costRaw !== null && costRaw !== undefined && !Number.isNaN(parseFloat(costRaw));
     const owners = Array.isArray(newGiftItem.owners) ? newGiftItem.owners : [];
+    const costItemsRaw = Array.isArray(newGiftItem.costItems) ? newGiftItem.costItems : [];
 
     if (!name) {
       alert("Please enter a gift name");
@@ -889,9 +894,21 @@ export default function App() {
       alert("Please enter a price (0 is allowed)");
       return;
     }
-    if (!costOk) {
-      alert("Please enter a cost (0 is allowed)");
+    if (costItemsRaw.length === 0) {
+      alert("Please add at least 1 cost item");
       return;
+    }
+    if (costItemsRaw.length > 4) {
+      alert("You can add up to 4 cost items");
+      return;
+    }
+    for (let i = 0; i < costItemsRaw.length; i++) {
+      const c = costItemsRaw[i];
+      const costOk = c.cost !== "" && c.cost !== null && c.cost !== undefined && !Number.isNaN(parseFloat(c.cost));
+      if (!costOk) {
+        alert(`Please enter a cost for item #${i + 1} (0 is allowed)`);
+        return;
+      }
     }
 
     // If no owner checked, default to current user / first campaign owner
@@ -907,12 +924,25 @@ export default function App() {
       }
     }
 
+    const merchandiseItems = getMerchandiseBudgetItems();
+    const costItems = costItemsRaw.map(c => {
+      const isManual = c.source === "manual";
+      const budgetItem = !isManual ? merchandiseItems.find(b => b.id === c.source || b.id === c.budgetItemId) : null;
+      return {
+        source: isManual ? "manual" : (c.source || c.budgetItemId),
+        budgetItemId: isManual ? "" : (c.budgetItemId || c.source || ""),
+        label: isManual ? (c.label || "Manual") : (budgetItem?.description || c.label || ""),
+        cost: parseFloat(c.cost) || 0,
+      };
+    });
+    const totalCost = sumCostItems(costItems);
+
     const gift = {
       id: editingGiftId || `gift_${Date.now()}`,
       name,
       price: parseFloat(priceRaw),
-      cost: parseFloat(costRaw),
-      costBudgetItemId: newGiftItem.costSource !== "manual" ? (newGiftItem.costBudgetItemId || newGiftItem.costSource) : "",
+      cost: totalCost,
+      costItems,
       category: newGiftItem.category || "",
       owners: giftOwners,
       comment: newGiftItem.comment || "",
@@ -946,24 +976,50 @@ export default function App() {
   };
 
   const handleEditGift = (gift) => {
-    const merchandiseItems = (selectedCampaign?.budgetItems || []).filter(item => isMerchandiseBudgetCategory(item.category));
-    const linkedId = gift.costBudgetItemId || "";
-    const linkedItem = linkedId ? merchandiseItems.find(b => b.id === linkedId) : null;
-    // Fallback: match by same unit price description if legacy gift has no link
-    const matchedByPrice = !linkedItem
-      ? merchandiseItems.find(b => Number(b.amount) === Number(gift.cost))
-      : null;
-    const sourceItem = linkedItem || matchedByPrice;
-    const costSource = sourceItem ? sourceItem.id : "manual";
+    const merchandiseItems = getMerchandiseBudgetItems();
+    let costItems;
+
+    if (Array.isArray(gift.costItems) && gift.costItems.length > 0) {
+      costItems = gift.costItems.slice(0, 4).map(c => {
+        const linked = c.budgetItemId || (c.source !== "manual" ? c.source : "");
+        const budgetItem = linked ? merchandiseItems.find(b => b.id === linked) : null;
+        if (budgetItem) {
+          return {
+            source: budgetItem.id,
+            budgetItemId: budgetItem.id,
+            cost: String(budgetItem.amount ?? c.cost ?? 0),
+            label: budgetItem.description || "",
+          };
+        }
+        return {
+          source: "manual",
+          budgetItemId: "",
+          cost: c.cost != null ? String(c.cost) : "",
+          label: c.label || "Manual",
+        };
+      });
+    } else {
+      // Legacy single cost
+      const linkedId = gift.costBudgetItemId || "";
+      const linkedItem = linkedId ? merchandiseItems.find(b => b.id === linkedId) : null;
+      const matchedByPrice = !linkedItem
+        ? merchandiseItems.find(b => Number(b.amount) === Number(gift.cost))
+        : null;
+      const sourceItem = linkedItem || matchedByPrice;
+      costItems = [{
+        source: sourceItem ? sourceItem.id : "manual",
+        budgetItemId: sourceItem ? sourceItem.id : "",
+        cost: sourceItem
+          ? String(sourceItem.amount ?? 0)
+          : (gift.cost != null ? String(gift.cost) : ""),
+        label: sourceItem ? sourceItem.description : "Manual",
+      }];
+    }
 
     setNewGiftItem({
       name: gift.name,
       price: gift.price != null ? String(gift.price) : "",
-      cost: sourceItem
-        ? String(sourceItem.amount ?? 0)
-        : (gift.cost != null ? String(gift.cost) : ""),
-      costSource,
-      costBudgetItemId: sourceItem ? sourceItem.id : "",
+      costItems,
       category: gift.category || "",
       owners: Array.isArray(gift.owners) ? gift.owners : [],
       comment: gift.comment || "",
@@ -1911,14 +1967,15 @@ export default function App() {
             <tbody>
               {selectedCampaign?.gifts && selectedCampaign.gifts.length > 0 ? (
                 selectedCampaign.gifts.map(gift => {
+                  const unitCost = getGiftUnitCost(gift);
                   const estimatedProfit = gift.suggestedQuantity ? (gift.price * gift.suggestedQuantity) : 0;
-                  const totalCost = gift.suggestedQuantity ? (gift.cost * gift.suggestedQuantity) : gift.cost;
+                  const totalCost = gift.suggestedQuantity ? (unitCost * gift.suggestedQuantity) : unitCost;
                   return (
                   <tr key={gift.id}>
                     <td>{gift.name}</td>
                     <td>{getCategoryLabel(gift.category, giftCategories)}</td>
                     <td>{selectedCampaign.currency} {gift.price.toFixed(2)}</td>
-                    <td>{selectedCampaign.currency} {gift.cost.toFixed(2)}</td>
+                    <td>{selectedCampaign.currency} {unitCost.toFixed(2)}</td>
                     <td>{selectedCampaign.currency} {totalCost.toFixed(2)}</td>
                     <td>{gift.suggestedQuantity || "-"}</td>
                     <td>{selectedCampaign.currency} {estimatedProfit.toFixed(2)}</td>
@@ -1952,55 +2009,97 @@ export default function App() {
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Price</label>
                 <input type="number" placeholder="Price" value={newGiftItem.price} onChange={e => setNewGiftItem({...newGiftItem, price: e.target.value})} className="input-field" />
                 
-                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Cost</label>
-                <select
-                  value={newGiftItem.costSource || "manual"}
-                  onChange={e => {
-                    const value = e.target.value;
-                    if (value === "manual") {
-                      setNewGiftItem(prev => ({
-                        ...prev,
-                        costSource: "manual",
-                        costBudgetItemId: "",
-                      }));
-                      return;
-                    }
-                    const item = getMerchandiseBudgetItems().find(b => b.id === value);
-                    setNewGiftItem(prev => ({
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>
+                  Cost items (up to 4)
+                </label>
+                {(newGiftItem.costItems || []).map((costItem, idx) => (
+                  <div key={idx} style={{ marginBottom: "12px", padding: "12px", background: "#2a3a2a", borderRadius: "6px", border: "1px solid #555" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ color: "#d4af37", fontWeight: "600", fontSize: "13px" }}>Item #{idx + 1}</span>
+                      {(newGiftItem.costItems || []).length > 1 && (
+                        <button
+                          type="button"
+                          className="btn-small btn-danger"
+                          onClick={() => setNewGiftItem(prev => ({
+                            ...prev,
+                            costItems: prev.costItems.filter((_, i) => i !== idx)
+                          }))}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <select
+                      value={costItem.source || "manual"}
+                      onChange={e => {
+                        const value = e.target.value;
+                        setNewGiftItem(prev => {
+                          const next = [...(prev.costItems || [])];
+                          if (value === "manual") {
+                            next[idx] = { ...next[idx], source: "manual", budgetItemId: "", label: "Manual" };
+                          } else {
+                            const item = getMerchandiseBudgetItems().find(b => b.id === value);
+                            next[idx] = {
+                              ...next[idx],
+                              source: value,
+                              budgetItemId: value,
+                              label: item?.description || "",
+                              cost: item ? String(item.amount ?? 0) : next[idx].cost,
+                            };
+                          }
+                          return { ...prev, costItems: next };
+                        });
+                      }}
+                      className="input-field"
+                    >
+                      <option value="manual">Manual entry</option>
+                      {getMerchandiseBudgetItems().map(item => (
+                        <option key={item.id} value={item.id}>
+                          {item.description} — {selectedCampaign.currency} {Number(item.amount || 0).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
+                    {(costItem.source || "manual") === "manual" ? (
+                      <input
+                        type="number"
+                        placeholder="Enter cost manually"
+                        value={costItem.cost}
+                        onChange={e => setNewGiftItem(prev => {
+                          const next = [...(prev.costItems || [])];
+                          next[idx] = { ...next[idx], cost: e.target.value };
+                          return { ...prev, costItems: next };
+                        })}
+                        className="input-field"
+                        style={{ marginTop: "8px" }}
+                      />
+                    ) : (
+                      <div className="input-field" style={{ marginTop: "8px", background: "#2a2a2a", color: "#ffffff" }}>
+                        Cost from budget: {selectedCampaign.currency} {Number(costItem.cost || 0).toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {(newGiftItem.costItems || []).length < 4 && (
+                  <button
+                    type="button"
+                    className="btn-small"
+                    style={{ marginBottom: "10px" }}
+                    onClick={() => setNewGiftItem(prev => ({
                       ...prev,
-                      costSource: value,
-                      costBudgetItemId: value,
-                      cost: item ? String(item.amount ?? 0) : prev.cost,
-                    }));
-                  }}
-                  className="input-field"
-                >
-                  <option value="manual">Manual entry</option>
-                  {getMerchandiseBudgetItems().map(item => (
-                    <option key={item.id} value={item.id}>
-                      {item.description} — {selectedCampaign.currency} {Number(item.amount || 0).toFixed(2)}
-                    </option>
-                  ))}
-                </select>
+                      costItems: [...(prev.costItems || []), { source: "manual", budgetItemId: "", cost: "" }]
+                    }))}
+                  >
+                    + Add cost item
+                  </button>
+                )}
                 {getMerchandiseBudgetItems().length === 0 && (
-                  <p style={{ color: "#ffcc00", fontSize: "12px", marginTop: "6px" }}>
+                  <p style={{ color: "#ffcc00", fontSize: "12px", marginBottom: "10px" }}>
                     No budget items in מרצ'נדייז (Merchandise). Use manual entry, or add merchandise items in Budget.
                   </p>
                 )}
-                {(newGiftItem.costSource || "manual") === "manual" ? (
-                  <input
-                    type="number"
-                    placeholder="Enter cost manually"
-                    value={newGiftItem.cost}
-                    onChange={e => setNewGiftItem({ ...newGiftItem, cost: e.target.value })}
-                    className="input-field"
-                    style={{ marginTop: "8px" }}
-                  />
-                ) : (
-                  <div className="input-field" style={{ marginTop: "8px", background: "#2a2a2a", color: "#ffffff" }}>
-                    Cost from budget: {selectedCampaign.currency} {Number(newGiftItem.cost || 0).toFixed(2)}
-                  </div>
-                )}
+                <div className="input-field" style={{ background: "#2a2a2a", color: "#ffffff", marginBottom: "10px" }}>
+                  Total Cost: {selectedCampaign.currency} {sumCostItems(newGiftItem.costItems).toFixed(2)}
+                </div>
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Category</label>
                 <select value={newGiftItem.category || ""} onChange={e => setNewGiftItem({...newGiftItem, category: e.target.value})} className="input-field">
