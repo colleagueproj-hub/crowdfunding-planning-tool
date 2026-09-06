@@ -403,15 +403,43 @@ body {
 
 .gantt-timeline-bar {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  padding: 0 4px;
 }
 
-.gantt-hover-panel {
-  transition: none;
+.gantt-bar-duration {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.gantt-portal-tooltip {
-  position: fixed;
-  transform: translate(-50%, 0);
+.gantt-hover-panel-static {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: #454545;
+  border: 1px solid #606060;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.gantt-chart-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-top: 8px;
+  padding-bottom: 120px;
+}
+
+.gantt-bar-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
   background: #1f1f1f;
   color: #ffffff;
   padding: 10px 14px;
@@ -419,18 +447,33 @@ body {
   font-size: 12px;
   line-height: 1.5;
   pointer-events: none;
-  z-index: 99999;
+  z-index: 1000;
   border: 2px solid #d4af37;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  min-width: 220px;
   max-width: 320px;
   text-align: center;
+  white-space: normal;
 }
 
-.gantt-portal-tooltip-title {
+.gantt-timeline-bar:hover {
+  z-index: 20;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+}
+
+.gantt-timeline-bar:hover .gantt-bar-tooltip {
+  display: block;
+}
+
+.gantt-bar-tooltip-title {
   color: #d4af37;
   font-weight: 700;
   margin-bottom: 6px;
   font-size: 13px;
+}
+
+.gantt-hover-panel {
+  transition: none;
 }
 
 .login-modal {
