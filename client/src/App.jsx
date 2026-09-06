@@ -1,8 +1,40 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import "./styles.css";
 import LoginModal from "./LoginModal";
 import ConfigModal from "./ConfigModal";
 import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUser, getDefaultSheetId, fetchNotifications, dismissNotification, APPS_SCRIPT_URL, fetchAllUsers, removeUser, addBudgetItems, setPlanningItems, upsertCampaignItem } from "./googleSheetsUtils";
+
+const parsePlanningDate = (dateStr) => {
+  if (!dateStr) return new Date(NaN);
+  if (dateStr instanceof Date) return dateStr;
+  const str = String(dateStr).trim();
+  if (str.includes("T")) {
+    const parsed = new Date(str);
+    if (!Number.isNaN(parsed.getTime())) {
+      return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+  }
+  const datePart = str.split("T")[0];
+  const [year, month, day] = datePart.split("-").map(Number);
+  if (!year || !month || !day) return new Date(NaN);
+  return new Date(year, month - 1, day);
+};
+
+const formatPlanningFullDate = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "Invalid date";
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const formatPlanningShortDate = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "?";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -83,6 +115,37 @@ export default function App() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [pickerMonth, setPickerMonth] = useState(new Date());
+  const [ganttHover, setGanttHover] = useState(null);
+
+  useEffect(() => {
+    if (activeTab !== "calendar") {
+      setGanttHover(null);
+    }
+  }, [activeTab]);
+
+  const showGanttHover = (item, itemKey, rowEl) => {
+    const barEl = rowEl?.querySelector(".gantt-timeline-bar");
+    const rect = (barEl || rowEl)?.getBoundingClientRect();
+    if (!rect) return;
+
+    const start = parsePlanningDate(item.startDate);
+    const end = parsePlanningDate(item.endDate);
+    const durationDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
+
+    setGanttHover({
+      id: itemKey,
+      name: item.name,
+      startLabel: formatPlanningFullDate(start),
+      endLabel: formatPlanningFullDate(end),
+      durationDays,
+      rect: {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      },
+    });
+  };
   const [newGiftItem, setNewGiftItem] = useState({
     name: "",
     price: "",
@@ -1576,17 +1639,55 @@ export default function App() {
               {/* Gantt Chart */}
               <div>
                 <h3 style={{ marginBottom: "15px", color: "#ffffff" }}>📊 Gantt Chart Timeline</h3>
-                <div style={{ overflowX: "auto", paddingBottom: "20px" }}>
+                <div
+                  className="gantt-hover-panel"
+                  style={{
+                    marginBottom: "12px",
+                    padding: "12px 16px",
+                    borderRadius: "6px",
+                    background: ganttHover ? "#3a4a3a" : "#454545",
+                    border: ganttHover ? "1px solid #d4af37" : "1px solid #606060",
+                    minHeight: "56px",
+                  }}
+                >
+                  {ganttHover ? (
+                    <div style={{ color: "#ffffff", fontSize: "13px", lineHeight: 1.5 }}>
+                      <div style={{ color: "#d4af37", fontWeight: "600", marginBottom: "4px" }}>{ganttHover.name}</div>
+                      <div><strong>Start:</strong> {ganttHover.startLabel}</div>
+                      <div><strong>End:</strong> {ganttHover.endLabel}</div>
+                      <div><strong>Duration:</strong> {ganttHover.durationDays} day{ganttHover.durationDays !== 1 ? "s" : ""}</div>
+                    </div>
+                  ) : (
+                    <span style={{ color: "#b0b0b0", fontSize: "13px" }}>
+                      Hover a timeline block to see full dates
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="gantt-chart-scroll"
+                  style={{ overflowX: "auto", paddingBottom: "20px", paddingTop: "8px" }}
+                  onMouseOver={(e) => {
+                    const row = e.target.closest("[data-gantt-row]");
+                    if (!row || !e.currentTarget.contains(row)) return;
+                    const itemKey = row.getAttribute("data-gantt-row");
+                    if (ganttHover?.id === itemKey) return;
+                    const itemIdx = Number(row.getAttribute("data-gantt-index"));
+                    const item = selectedCampaign.planningItems[itemIdx];
+                    if (item) showGanttHover(item, itemKey, row);
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                      setGanttHover(null);
+                    }
+                  }}
+                >
                   {selectedCampaign.planningItems.length === 0 ? (
                     <div style={{ color: "#d4af37", textAlign: "center", padding: "20px" }}>No planning items to display</div>
                   ) : (
                     <div>
                       {(() => {
                         // Parse dates correctly (YYYY-MM-DD format)
-                        const parseDate = (dateStr) => {
-                          const [year, month, day] = dateStr.split('-').map(Number);
-                          return new Date(year, month - 1, day);
-                        };
+                        const parseDate = parsePlanningDate;
                         
                         // Calculate the date range from all planning items
                         const dates = selectedCampaign.planningItems.flatMap(item => [
@@ -1704,6 +1805,8 @@ export default function App() {
                             {selectedCampaign.planningItems.map((item, itemIdx) => {
                               const startDate = parseDate(item.startDate);
                               const endDate = parseDate(item.endDate);
+                              const itemKey = String(item.id ?? `gantt-${itemIdx}`);
+                              const isHovered = ganttHover?.id === itemKey;
                               
                               // Calculate position and width relative to the displayed timeline
                               const daysFromStart = Math.floor((startDate - minDate) / (1000 * 60 * 60 * 24));
@@ -1714,14 +1817,31 @@ export default function App() {
                               
                               // Get color for this task based on index
                               const taskColor = taskColors[itemIdx % taskColors.length];
+                              const barLabel = isHovered
+                                ? `${formatPlanningShortDate(startDate)} – ${formatPlanningShortDate(endDate)}`
+                                : `${durationDays}d`;
 
                               return (
-                                <div key={item.id} style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}>
-                                  <div style={{ width: "200px", color: "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px" }}>
+                                <div
+                                  key={itemKey}
+                                  data-gantt-row={itemKey}
+                                  data-gantt-index={itemIdx}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    marginBottom: "15px",
+                                    fontSize: "13px",
+                                    borderRadius: "6px",
+                                    background: isHovered ? "rgba(212, 175, 55, 0.12)" : "transparent",
+                                    outline: isHovered ? "1px solid rgba(212, 175, 55, 0.35)" : "none",
+                                  }}
+                                >
+                                  <div style={{ width: "200px", color: isHovered ? "#d4af37" : "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px", paddingLeft: "4px" }}>
                                     {item.name}
                                   </div>
-                                  <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center" }}>
+                                  <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center", overflow: "visible" }}>
                                     {/* Background grid by month */}
+                                    <div style={{ position: "absolute", inset: 0, display: "flex", pointerEvents: "none", zIndex: 0 }}>
                                     {monthGroups.map((month, idx) => {
                                       const monthWidth = (month.daysInRange / totalDays) * 100;
                                       return (
@@ -1737,30 +1857,39 @@ export default function App() {
                                         />
                                       );
                                     })}
+                                    </div>
                                     
                                     {/* Bar */}
-                                    {barStartPercent < 100 && barWidthPercent > 0 && (
+                                    {Number.isFinite(barStartPercent) && Number.isFinite(barWidthPercent) && barWidthPercent > 0 && barStartPercent < 100 && (
                                       <div
+                                        className="gantt-timeline-bar"
+                                        title={`${item.name}: ${formatPlanningFullDate(startDate)} → ${formatPlanningFullDate(endDate)}`}
                                         style={{
                                           position: "absolute",
-                                          left: `${barStartPercent}%`,
-                                          width: `${Math.min(barWidthPercent, 100 - barStartPercent)}%`,
+                                          left: `${Math.max(0, barStartPercent)}%`,
+                                          width: `${Math.min(barWidthPercent, 100 - Math.max(0, barStartPercent))}%`,
                                           height: "30px",
+                                          top: "5px",
                                           background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? taskColor : "#6a6a6a",
                                           borderRadius: "4px",
                                           display: "flex",
                                           alignItems: "center",
                                           justifyContent: "center",
                                           color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
-                                          fontSize: "11px",
+                                          fontSize: isHovered ? "10px" : "11px",
                                           fontWeight: "600",
                                           border: `2px solid ${taskColor}`,
                                           minWidth: "40px",
+                                          zIndex: 2,
+                                          cursor: "default",
+                                          boxShadow: isHovered ? `0 0 12px ${taskColor}80` : `0 0 8px ${taskColor}40`,
+                                          padding: "0 4px",
+                                          whiteSpace: "nowrap",
                                           overflow: "hidden",
-                                          boxShadow: `0 0 8px ${taskColor}40`
+                                          textOverflow: "ellipsis",
                                         }}
                                       >
-                                        {durationDays}d
+                                        {barLabel}
                                       </div>
                                     )}
                                   </div>
@@ -2612,6 +2741,21 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+      {ganttHover && createPortal(
+        <div
+          className="gantt-portal-tooltip"
+          style={{
+            top: ganttHover.rect.top - 10,
+            left: ganttHover.rect.left + ganttHover.rect.width / 2,
+          }}
+        >
+          <div className="gantt-portal-tooltip-title">{ganttHover.name}</div>
+          <div>Start: {ganttHover.startLabel}</div>
+          <div>End: {ganttHover.endLabel}</div>
+          <div>{ganttHover.durationDays} day{ganttHover.durationDays !== 1 ? "s" : ""}</div>
+        </div>,
+        document.body
       )}
     </div>
   );

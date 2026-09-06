@@ -401,6 +401,38 @@ body {
   background: #3a4a3a;
 }
 
+.gantt-timeline-bar {
+  cursor: default;
+}
+
+.gantt-hover-panel {
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.gantt-portal-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: #1f1f1f;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+  z-index: 99999;
+  border: 2px solid #d4af37;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  max-width: 320px;
+  text-align: center;
+}
+
+.gantt-portal-tooltip-title {
+  color: #d4af37;
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
 .login-modal {
   text-align: center;
 }
