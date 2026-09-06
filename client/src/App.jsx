@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import "./styles.css";
 import LoginModal from "./LoginModal";
@@ -34,6 +34,74 @@ const formatPlanningFullDate = (date) => {
 const formatPlanningShortDate = (date) => {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "?";
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const GANTT_TASK_COLORS = [
+  "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8",
+  "#F7DC6F", "#BB8FCE", "#85C1E2", "#F8B88B", "#52C4A1",
+];
+
+const buildGanttChartData = (planningItems) => {
+  const dates = planningItems.flatMap((item) => [
+    parsePlanningDate(item.startDate),
+    parsePlanningDate(item.endDate),
+  ]);
+  const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+  minDate.setDate(minDate.getDate() - 5);
+  maxDate.setDate(maxDate.getDate() + 5);
+
+  const monthGroups = [];
+  let currentDate = new Date(minDate);
+  while (currentDate <= maxDate) {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+    const startInRange = monthStart < minDate ? minDate : monthStart;
+    const endInRange = monthEnd > maxDate ? maxDate : monthEnd;
+    const daysInRange = Math.ceil((endInRange - startInRange) / (1000 * 60 * 60 * 24)) + 1;
+
+    monthGroups.push({
+      label: monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      startDate: startInRange,
+      daysInRange,
+    });
+    currentDate = new Date(year, month + 1, 1);
+  }
+
+  const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
+
+  const rows = planningItems.map((item, itemIdx) => {
+    const startDate = parsePlanningDate(item.startDate);
+    const endDate = parsePlanningDate(item.endDate);
+    const itemKey = String(item.id ?? `gantt-${itemIdx}`);
+    const daysFromStart = Math.floor((startDate - minDate) / (1000 * 60 * 60 * 24));
+    const durationDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
+    const barStartPercent = (daysFromStart / totalDays) * 100;
+    const barWidthPercent = (durationDays / totalDays) * 100;
+
+    return {
+      item,
+      itemKey,
+      startDate,
+      endDate,
+      durationDays,
+      barStartPercent,
+      barWidthPercent,
+      taskColor: GANTT_TASK_COLORS[itemIdx % GANTT_TASK_COLORS.length],
+      showBar: Number.isFinite(barStartPercent) && Number.isFinite(barWidthPercent) && barWidthPercent > 0 && barStartPercent < 100,
+      tooltip: {
+        id: itemKey,
+        name: item.name,
+        startLabel: formatPlanningFullDate(startDate),
+        endLabel: formatPlanningFullDate(endDate),
+        durationDays,
+      },
+    };
+  });
+
+  return { monthGroups, totalDays, rows };
 };
 
 export default function App() {
@@ -123,29 +191,22 @@ export default function App() {
     }
   }, [activeTab]);
 
-  const showGanttHover = (item, itemKey, rowEl) => {
-    const barEl = rowEl?.querySelector(".gantt-timeline-bar");
-    const rect = (barEl || rowEl)?.getBoundingClientRect();
-    if (!rect) return;
+  const ganttChartData = useMemo(() => {
+    if (!selectedCampaign?.planningItems?.length) return null;
+    return buildGanttChartData(selectedCampaign.planningItems);
+  }, [selectedCampaign?.planningItems]);
 
-    const start = parsePlanningDate(item.startDate);
-    const end = parsePlanningDate(item.endDate);
-    const durationDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
-
+  const handleGanttBarEnter = useCallback((tooltip, e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
     setGanttHover({
-      id: itemKey,
-      name: item.name,
-      startLabel: formatPlanningFullDate(start),
-      endLabel: formatPlanningFullDate(end),
-      durationDays,
-      rect: {
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-      },
+      ...tooltip,
+      rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
     });
-  };
+  }, []);
+
+  const handleGanttBarLeave = useCallback(() => {
+    setGanttHover(null);
+  }, []);
   const [newGiftItem, setNewGiftItem] = useState({
     name: "",
     price: "",
@@ -1659,247 +1720,149 @@ export default function App() {
                     </div>
                   ) : (
                     <span style={{ color: "#b0b0b0", fontSize: "13px" }}>
-                      Hover a timeline block to see full dates
+                      Hover a colored timeline block to see full dates
                     </span>
                   )}
                 </div>
                 <div
                   className="gantt-chart-scroll"
                   style={{ overflowX: "auto", paddingBottom: "20px", paddingTop: "8px" }}
-                  onMouseOver={(e) => {
-                    const row = e.target.closest("[data-gantt-row]");
-                    if (!row || !e.currentTarget.contains(row)) return;
-                    const itemKey = row.getAttribute("data-gantt-row");
-                    if (ganttHover?.id === itemKey) return;
-                    const itemIdx = Number(row.getAttribute("data-gantt-index"));
-                    const item = selectedCampaign.planningItems[itemIdx];
-                    if (item) showGanttHover(item, itemKey, row);
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!e.currentTarget.contains(e.relatedTarget)) {
-                      setGanttHover(null);
-                    }
-                  }}
                 >
-                  {selectedCampaign.planningItems.length === 0 ? (
+                  {!ganttChartData ? (
                     <div style={{ color: "#d4af37", textAlign: "center", padding: "20px" }}>No planning items to display</div>
                   ) : (
-                    <div>
-                      {(() => {
-                        // Parse dates correctly (YYYY-MM-DD format)
-                        const parseDate = parsePlanningDate;
-                        
-                        // Calculate the date range from all planning items
-                        const dates = selectedCampaign.planningItems.flatMap(item => [
-                          parseDate(item.startDate),
-                          parseDate(item.endDate)
-                        ]);
-                        const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-                        const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
-                        
-                        // Add padding: start 5 days before earliest, end 5 days after latest
-                        minDate.setDate(minDate.getDate() - 5);
-                        maxDate.setDate(maxDate.getDate() + 5);
-                        
-                        // Group dates by month
-                        const monthGroups = [];
-                        let currentDate = new Date(minDate);
-                        while (currentDate <= maxDate) {
-                          const year = currentDate.getFullYear();
-                          const month = currentDate.getMonth();
-                          const monthStart = new Date(year, month, 1);
-                          const monthEnd = new Date(year, month + 1, 0);
-                          
-                          const startInRange = monthStart < minDate ? minDate : monthStart;
-                          const endInRange = monthEnd > maxDate ? maxDate : monthEnd;
-                          
-                          const daysInRange = Math.ceil((endInRange - startInRange) / (1000 * 60 * 60 * 24)) + 1;
-                          const monthLabel = monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                          
-                          monthGroups.push({
-                            label: monthLabel,
-                            startDate: startInRange,
-                            endDate: endInRange,
-                            daysInRange: daysInRange,
-                            fullMonthStart: monthStart,
-                            fullMonthEnd: monthEnd
-                          });
-                          
-                          currentDate = new Date(year, month + 1, 1);
-                        }
-                        
-                        const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
-                        
-                        // Define colors for different tasks (rotates through colors)
-                        const taskColors = [
-                          "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8", 
-                          "#F7DC6F", "#BB8FCE", "#85C1E2", "#F8B88B", "#52C4A1"
-                        ];
+                    <>
+                      <div style={{ display: "flex", marginBottom: "5px", fontSize: "12px", color: "#ffffff", paddingLeft: "200px", fontWeight: "600" }}>
+                        {ganttChartData.monthGroups.map((month, idx) => {
+                          const monthWidth = (month.daysInRange / ganttChartData.totalDays) * 100;
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                width: `${monthWidth}%`,
+                                textAlign: "center",
+                                background: "#3a4a3a",
+                                borderRight: "2px solid #505050",
+                                padding: "8px 0",
+                                color: "#d4af37",
+                              }}
+                            >
+                              {month.label}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ display: "flex", marginBottom: "10px", fontSize: "11px", color: "#b0b0b0", paddingLeft: "200px", fontWeight: "400" }}>
+                        {ganttChartData.monthGroups.map((month, monthIdx) => {
+                          const monthWidth = (month.daysInRange / ganttChartData.totalDays) * 100;
+                          const daysInThisMonth = month.daysInRange;
+                          const dayWidth = 100 / daysInThisMonth;
+
+                          return (
+                            <div
+                              key={monthIdx}
+                              style={{
+                                width: `${monthWidth}%`,
+                                display: "flex",
+                                borderRight: "2px solid #505050",
+                              }}
+                            >
+                              {Array.from({ length: daysInThisMonth }).map((_, dayIdx) => {
+                                const currentDay = new Date(month.startDate);
+                                currentDay.setDate(currentDay.getDate() + dayIdx);
+                                return (
+                                  <div
+                                    key={dayIdx}
+                                    style={{
+                                      width: `${dayWidth}%`,
+                                      textAlign: "center",
+                                      padding: "3px 0",
+                                      borderRight: "1px solid #404040",
+                                      fontSize: "10px",
+                                    }}
+                                  >
+                                    {currentDay.getDate()}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {ganttChartData.rows.map((row) => {
+                        const { item, itemKey, durationDays, barStartPercent, barWidthPercent, taskColor, showBar, tooltip, startDate, endDate } = row;
+                        const isBarHovered = ganttHover?.id === itemKey;
+                        const barLabel = isBarHovered
+                          ? `${formatPlanningShortDate(startDate)} – ${formatPlanningShortDate(endDate)}`
+                          : `${durationDays}d`;
 
                         return (
-                          <>
-                            {/* Month Headers */}
-                            <div style={{ display: "flex", marginBottom: "5px", fontSize: "12px", color: "#ffffff", paddingLeft: "200px", fontWeight: "600" }}>
-                              {monthGroups.map((month, idx) => {
-                                const monthWidth = (month.daysInRange / totalDays) * 100;
-                                return (
-                                  <div 
-                                    key={idx} 
-                                    style={{ 
-                                      width: `${monthWidth}%`,
-                                      textAlign: "center",
-                                      background: "#3a4a3a",
-                                      borderRight: "2px solid #505050",
-                                      padding: "8px 0",
-                                      color: "#d4af37"
-                                    }}
-                                  >
-                                    {month.label}
-                                  </div>
-                                );
-                              })}
+                          <div
+                            key={itemKey}
+                            style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}
+                          >
+                            <div style={{ width: "200px", color: "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px", paddingLeft: "4px" }}>
+                              {item.name}
                             </div>
+                            <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center", overflow: "visible" }}>
+                              <div style={{ position: "absolute", inset: 0, display: "flex", pointerEvents: "none", zIndex: 0 }}>
+                                {ganttChartData.monthGroups.map((month, idx) => {
+                                  const monthWidth = (month.daysInRange / ganttChartData.totalDays) * 100;
+                                  return (
+                                    <div
+                                      key={idx}
+                                      style={{
+                                        width: `${monthWidth}%`,
+                                        height: "100%",
+                                        borderRight: "2px solid #505050",
+                                        display: "flex",
+                                        background: idx % 2 === 0 ? "transparent" : "rgba(100, 100, 100, 0.1)",
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </div>
 
-                            {/* Date Numbers Row */}
-                            <div style={{ display: "flex", marginBottom: "10px", fontSize: "11px", color: "#b0b0b0", paddingLeft: "200px", fontWeight: "400" }}>
-                              {monthGroups.map((month, monthIdx) => {
-                                const monthWidth = (month.daysInRange / totalDays) * 100;
-                                const daysInThisMonth = month.daysInRange;
-                                const dayWidth = 100 / daysInThisMonth;
-                                
-                                return (
-                                  <div 
-                                    key={monthIdx} 
-                                    style={{ 
-                                      width: `${monthWidth}%`,
-                                      display: "flex",
-                                      borderRight: "2px solid #505050"
-                                    }}
-                                  >
-                                    {Array.from({ length: daysInThisMonth }).map((_, dayIdx) => {
-                                      const currentDay = new Date(month.startDate);
-                                      currentDay.setDate(currentDay.getDate() + dayIdx);
-                                      const dayOfMonth = currentDay.getDate();
-                                      
-                                      return (
-                                        <div
-                                          key={dayIdx}
-                                          style={{
-                                            width: `${dayWidth}%`,
-                                            textAlign: "center",
-                                            padding: "3px 0",
-                                            borderRight: "1px solid #404040",
-                                            fontSize: "10px"
-                                          }}
-                                        >
-                                          {dayOfMonth}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            {/* Gantt Bars */}
-                            {selectedCampaign.planningItems.map((item, itemIdx) => {
-                              const startDate = parseDate(item.startDate);
-                              const endDate = parseDate(item.endDate);
-                              const itemKey = String(item.id ?? `gantt-${itemIdx}`);
-                              const isHovered = ganttHover?.id === itemKey;
-                              
-                              // Calculate position and width relative to the displayed timeline
-                              const daysFromStart = Math.floor((startDate - minDate) / (1000 * 60 * 60 * 24));
-                              const durationDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1);
-                              
-                              const barStartPercent = (daysFromStart / totalDays) * 100;
-                              const barWidthPercent = (durationDays / totalDays) * 100;
-                              
-                              // Get color for this task based on index
-                              const taskColor = taskColors[itemIdx % taskColors.length];
-                              const barLabel = isHovered
-                                ? `${formatPlanningShortDate(startDate)} – ${formatPlanningShortDate(endDate)}`
-                                : `${durationDays}d`;
-
-                              return (
+                              {showBar && (
                                 <div
-                                  key={itemKey}
-                                  data-gantt-row={itemKey}
-                                  data-gantt-index={itemIdx}
+                                  className="gantt-timeline-bar"
+                                  onMouseEnter={(e) => handleGanttBarEnter(tooltip, e)}
+                                  onMouseLeave={handleGanttBarLeave}
                                   style={{
+                                    position: "absolute",
+                                    left: `${Math.max(0, barStartPercent)}%`,
+                                    width: `${Math.min(barWidthPercent, 100 - Math.max(0, barStartPercent))}%`,
+                                    height: "30px",
+                                    top: "5px",
+                                    background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? taskColor : "#6a6a6a",
+                                    borderRadius: "4px",
                                     display: "flex",
                                     alignItems: "center",
-                                    marginBottom: "15px",
-                                    fontSize: "13px",
-                                    borderRadius: "6px",
-                                    background: isHovered ? "rgba(212, 175, 55, 0.12)" : "transparent",
-                                    outline: isHovered ? "1px solid rgba(212, 175, 55, 0.35)" : "none",
+                                    justifyContent: "center",
+                                    color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
+                                    fontSize: isBarHovered ? "10px" : "11px",
+                                    fontWeight: "600",
+                                    border: `2px solid ${taskColor}`,
+                                    minWidth: "40px",
+                                    zIndex: 2,
+                                    cursor: "pointer",
+                                    boxShadow: isBarHovered ? `0 0 12px ${taskColor}80` : `0 0 8px ${taskColor}40`,
+                                    padding: "0 4px",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
                                   }}
                                 >
-                                  <div style={{ width: "200px", color: isHovered ? "#d4af37" : "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px", paddingLeft: "4px" }}>
-                                    {item.name}
-                                  </div>
-                                  <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center", overflow: "visible" }}>
-                                    {/* Background grid by month */}
-                                    <div style={{ position: "absolute", inset: 0, display: "flex", pointerEvents: "none", zIndex: 0 }}>
-                                    {monthGroups.map((month, idx) => {
-                                      const monthWidth = (month.daysInRange / totalDays) * 100;
-                                      return (
-                                        <div 
-                                          key={idx} 
-                                          style={{ 
-                                            width: `${monthWidth}%`, 
-                                            height: "100%",
-                                            borderRight: "2px solid #505050",
-                                            display: "flex",
-                                            background: idx % 2 === 0 ? "transparent" : "rgba(100, 100, 100, 0.1)"
-                                          }} 
-                                        />
-                                      );
-                                    })}
-                                    </div>
-                                    
-                                    {/* Bar */}
-                                    {Number.isFinite(barStartPercent) && Number.isFinite(barWidthPercent) && barWidthPercent > 0 && barStartPercent < 100 && (
-                                      <div
-                                        className="gantt-timeline-bar"
-                                        title={`${item.name}: ${formatPlanningFullDate(startDate)} → ${formatPlanningFullDate(endDate)}`}
-                                        style={{
-                                          position: "absolute",
-                                          left: `${Math.max(0, barStartPercent)}%`,
-                                          width: `${Math.min(barWidthPercent, 100 - Math.max(0, barStartPercent))}%`,
-                                          height: "30px",
-                                          top: "5px",
-                                          background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? taskColor : "#6a6a6a",
-                                          borderRadius: "4px",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
-                                          fontSize: isHovered ? "10px" : "11px",
-                                          fontWeight: "600",
-                                          border: `2px solid ${taskColor}`,
-                                          minWidth: "40px",
-                                          zIndex: 2,
-                                          cursor: "default",
-                                          boxShadow: isHovered ? `0 0 12px ${taskColor}80` : `0 0 8px ${taskColor}40`,
-                                          padding: "0 4px",
-                                          whiteSpace: "nowrap",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                        }}
-                                      >
-                                        {barLabel}
-                                      </div>
-                                    )}
-                                  </div>
+                                  {barLabel}
                                 </div>
-                              );
-                            })}
-                          </>
+                              )}
+                            </div>
+                          </div>
                         );
-                      })()}
-                    </div>
+                      })}
+                    </>
                   )}
                 </div>
 
