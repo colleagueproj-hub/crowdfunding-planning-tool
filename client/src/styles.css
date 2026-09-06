@@ -402,7 +402,7 @@ body {
 }
 
 .gantt-timeline-bar {
-  cursor: default;
+  cursor: pointer;
 }
 
 .gantt-hover-panel {
@@ -411,7 +411,7 @@ body {
 
 .gantt-portal-tooltip {
   position: fixed;
-  transform: translate(-50%, -100%);
+  transform: translate(-50%, 0);
   background: #1f1f1f;
   color: #ffffff;
   padding: 10px 14px;

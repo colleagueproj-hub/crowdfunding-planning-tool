@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import "./styles.css";
 import LoginModal from "./LoginModal";
@@ -29,11 +29,6 @@ const formatPlanningFullDate = (date) => {
     month: "long",
     day: "numeric",
   });
-};
-
-const formatPlanningShortDate = (date) => {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "?";
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
 const GANTT_TASK_COLORS = [
@@ -103,6 +98,209 @@ const buildGanttChartData = (planningItems) => {
 
   return { monthGroups, totalDays, rows };
 };
+
+const GanttTimelineBar = React.memo(function GanttTimelineBar({ row, onHoverInfo }) {
+  const barRef = React.useRef(null);
+  const [tooltip, setTooltip] = React.useState(null);
+  const { item, durationDays, barStartPercent, barWidthPercent, taskColor, showBar } = row;
+
+  const showTooltip = () => {
+    const rect = barRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setTooltip({
+      top: rect.bottom + 8,
+      left: rect.left + rect.width / 2,
+      ...row.tooltip,
+    });
+    onHoverInfo?.(row.tooltip);
+  };
+
+  const hideTooltip = () => {
+    setTooltip(null);
+    onHoverInfo?.(null);
+  };
+
+  if (!showBar) return null;
+
+  const barBackground = item.status === "completed"
+    ? "#3a5a3a"
+    : item.status === "in-progress"
+      ? taskColor
+      : "#6a6a6a";
+
+  return (
+    <>
+      <div
+        ref={barRef}
+        className="gantt-timeline-bar"
+        onMouseEnter={showTooltip}
+        onMouseLeave={hideTooltip}
+        style={{
+          position: "absolute",
+          left: `${Math.max(0, barStartPercent)}%`,
+          width: `${Math.min(barWidthPercent, 100 - Math.max(0, barStartPercent))}%`,
+          height: "30px",
+          top: "5px",
+          background: barBackground,
+          borderRadius: "4px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
+          fontSize: "11px",
+          fontWeight: "600",
+          border: `2px solid ${taskColor}`,
+          minWidth: "40px",
+          zIndex: 2,
+          cursor: "pointer",
+          boxShadow: `0 0 8px ${taskColor}40`,
+          padding: "0 4px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {durationDays}d
+      </div>
+      {tooltip && createPortal(
+        <div
+          className="gantt-portal-tooltip"
+          style={{ top: tooltip.top, left: tooltip.left }}
+        >
+          <div className="gantt-portal-tooltip-title">{tooltip.name}</div>
+          <div>Start: {tooltip.startLabel}</div>
+          <div>End: {tooltip.endLabel}</div>
+          <div>{tooltip.durationDays} day{tooltip.durationDays !== 1 ? "s" : ""}</div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+});
+
+function GanttChart({ planningItems }) {
+  const [panelInfo, setPanelInfo] = React.useState(null);
+  const chartData = useMemo(() => {
+    if (!planningItems?.length) return null;
+    return buildGanttChartData(planningItems);
+  }, [planningItems]);
+
+  if (!chartData) {
+    return <div style={{ color: "#d4af37", textAlign: "center", padding: "20px" }}>No planning items to display</div>;
+  }
+
+  return (
+    <>
+      <div
+        className="gantt-hover-panel"
+        style={{
+          marginBottom: "12px",
+          padding: "12px 16px",
+          borderRadius: "6px",
+          background: panelInfo ? "#3a4a3a" : "#454545",
+          border: panelInfo ? "1px solid #d4af37" : "1px solid #606060",
+          minHeight: "56px",
+        }}
+      >
+        {panelInfo ? (
+          <div style={{ color: "#ffffff", fontSize: "13px", lineHeight: 1.5 }}>
+            <div style={{ color: "#d4af37", fontWeight: "600", marginBottom: "4px" }}>{panelInfo.name}</div>
+            <div><strong>Start:</strong> {panelInfo.startLabel}</div>
+            <div><strong>End:</strong> {panelInfo.endLabel}</div>
+            <div><strong>Duration:</strong> {panelInfo.durationDays} day{panelInfo.durationDays !== 1 ? "s" : ""}</div>
+          </div>
+        ) : (
+          <span style={{ color: "#b0b0b0", fontSize: "13px" }}>
+            Hover a colored timeline block to see full dates
+          </span>
+        )}
+      </div>
+      <div className="gantt-chart-scroll" style={{ overflowX: "auto", paddingBottom: "20px", paddingTop: "8px" }}>
+        <div style={{ display: "flex", marginBottom: "5px", fontSize: "12px", color: "#ffffff", paddingLeft: "200px", fontWeight: "600" }}>
+          {chartData.monthGroups.map((month, idx) => {
+            const monthWidth = (month.daysInRange / chartData.totalDays) * 100;
+            return (
+              <div
+                key={idx}
+                style={{
+                  width: `${monthWidth}%`,
+                  textAlign: "center",
+                  background: "#3a4a3a",
+                  borderRight: "2px solid #505050",
+                  padding: "8px 0",
+                  color: "#d4af37",
+                }}
+              >
+                {month.label}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", marginBottom: "10px", fontSize: "11px", color: "#b0b0b0", paddingLeft: "200px", fontWeight: "400" }}>
+          {chartData.monthGroups.map((month, monthIdx) => {
+            const monthWidth = (month.daysInRange / chartData.totalDays) * 100;
+            const dayWidth = 100 / month.daysInRange;
+
+            return (
+              <div
+                key={monthIdx}
+                style={{ width: `${monthWidth}%`, display: "flex", borderRight: "2px solid #505050" }}
+              >
+                {Array.from({ length: month.daysInRange }).map((_, dayIdx) => {
+                  const currentDay = new Date(month.startDate);
+                  currentDay.setDate(currentDay.getDate() + dayIdx);
+                  return (
+                    <div
+                      key={dayIdx}
+                      style={{
+                        width: `${dayWidth}%`,
+                        textAlign: "center",
+                        padding: "3px 0",
+                        borderRight: "1px solid #404040",
+                        fontSize: "10px",
+                      }}
+                    >
+                      {currentDay.getDate()}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+
+        {chartData.rows.map((row) => (
+          <div key={row.itemKey} style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}>
+            <div style={{ width: "200px", color: "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px", paddingLeft: "4px" }}>
+              {row.item.name}
+            </div>
+            <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center", overflow: "visible" }}>
+              <div style={{ position: "absolute", inset: 0, display: "flex", pointerEvents: "none", zIndex: 0 }}>
+                {chartData.monthGroups.map((month, idx) => {
+                  const monthWidth = (month.daysInRange / chartData.totalDays) * 100;
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        width: `${monthWidth}%`,
+                        height: "100%",
+                        borderRight: "2px solid #505050",
+                        display: "flex",
+                        background: idx % 2 === 0 ? "transparent" : "rgba(100, 100, 100, 0.1)",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <GanttTimelineBar row={row} onHoverInfo={setPanelInfo} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState(getLoggedInUser());
@@ -183,30 +381,6 @@ export default function App() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [pickerMonth, setPickerMonth] = useState(new Date());
-  const [ganttHover, setGanttHover] = useState(null);
-
-  useEffect(() => {
-    if (activeTab !== "calendar") {
-      setGanttHover(null);
-    }
-  }, [activeTab]);
-
-  const ganttChartData = useMemo(() => {
-    if (!selectedCampaign?.planningItems?.length) return null;
-    return buildGanttChartData(selectedCampaign.planningItems);
-  }, [selectedCampaign?.planningItems]);
-
-  const handleGanttBarEnter = useCallback((tooltip, e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setGanttHover({
-      ...tooltip,
-      rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
-    });
-  }, []);
-
-  const handleGanttBarLeave = useCallback(() => {
-    setGanttHover(null);
-  }, []);
   const [newGiftItem, setNewGiftItem] = useState({
     name: "",
     price: "",
@@ -1700,171 +1874,7 @@ export default function App() {
               {/* Gantt Chart */}
               <div>
                 <h3 style={{ marginBottom: "15px", color: "#ffffff" }}>📊 Gantt Chart Timeline</h3>
-                <div
-                  className="gantt-hover-panel"
-                  style={{
-                    marginBottom: "12px",
-                    padding: "12px 16px",
-                    borderRadius: "6px",
-                    background: ganttHover ? "#3a4a3a" : "#454545",
-                    border: ganttHover ? "1px solid #d4af37" : "1px solid #606060",
-                    minHeight: "56px",
-                  }}
-                >
-                  {ganttHover ? (
-                    <div style={{ color: "#ffffff", fontSize: "13px", lineHeight: 1.5 }}>
-                      <div style={{ color: "#d4af37", fontWeight: "600", marginBottom: "4px" }}>{ganttHover.name}</div>
-                      <div><strong>Start:</strong> {ganttHover.startLabel}</div>
-                      <div><strong>End:</strong> {ganttHover.endLabel}</div>
-                      <div><strong>Duration:</strong> {ganttHover.durationDays} day{ganttHover.durationDays !== 1 ? "s" : ""}</div>
-                    </div>
-                  ) : (
-                    <span style={{ color: "#b0b0b0", fontSize: "13px" }}>
-                      Hover a colored timeline block to see full dates
-                    </span>
-                  )}
-                </div>
-                <div
-                  className="gantt-chart-scroll"
-                  style={{ overflowX: "auto", paddingBottom: "20px", paddingTop: "8px" }}
-                >
-                  {!ganttChartData ? (
-                    <div style={{ color: "#d4af37", textAlign: "center", padding: "20px" }}>No planning items to display</div>
-                  ) : (
-                    <>
-                      <div style={{ display: "flex", marginBottom: "5px", fontSize: "12px", color: "#ffffff", paddingLeft: "200px", fontWeight: "600" }}>
-                        {ganttChartData.monthGroups.map((month, idx) => {
-                          const monthWidth = (month.daysInRange / ganttChartData.totalDays) * 100;
-                          return (
-                            <div
-                              key={idx}
-                              style={{
-                                width: `${monthWidth}%`,
-                                textAlign: "center",
-                                background: "#3a4a3a",
-                                borderRight: "2px solid #505050",
-                                padding: "8px 0",
-                                color: "#d4af37",
-                              }}
-                            >
-                              {month.label}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div style={{ display: "flex", marginBottom: "10px", fontSize: "11px", color: "#b0b0b0", paddingLeft: "200px", fontWeight: "400" }}>
-                        {ganttChartData.monthGroups.map((month, monthIdx) => {
-                          const monthWidth = (month.daysInRange / ganttChartData.totalDays) * 100;
-                          const daysInThisMonth = month.daysInRange;
-                          const dayWidth = 100 / daysInThisMonth;
-
-                          return (
-                            <div
-                              key={monthIdx}
-                              style={{
-                                width: `${monthWidth}%`,
-                                display: "flex",
-                                borderRight: "2px solid #505050",
-                              }}
-                            >
-                              {Array.from({ length: daysInThisMonth }).map((_, dayIdx) => {
-                                const currentDay = new Date(month.startDate);
-                                currentDay.setDate(currentDay.getDate() + dayIdx);
-                                return (
-                                  <div
-                                    key={dayIdx}
-                                    style={{
-                                      width: `${dayWidth}%`,
-                                      textAlign: "center",
-                                      padding: "3px 0",
-                                      borderRight: "1px solid #404040",
-                                      fontSize: "10px",
-                                    }}
-                                  >
-                                    {currentDay.getDate()}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {ganttChartData.rows.map((row) => {
-                        const { item, itemKey, durationDays, barStartPercent, barWidthPercent, taskColor, showBar, tooltip, startDate, endDate } = row;
-                        const isBarHovered = ganttHover?.id === itemKey;
-                        const barLabel = isBarHovered
-                          ? `${formatPlanningShortDate(startDate)} – ${formatPlanningShortDate(endDate)}`
-                          : `${durationDays}d`;
-
-                        return (
-                          <div
-                            key={itemKey}
-                            style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}
-                          >
-                            <div style={{ width: "200px", color: "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px", paddingLeft: "4px" }}>
-                              {item.name}
-                            </div>
-                            <div style={{ flex: 1, display: "flex", position: "relative", height: "40px", alignItems: "center", overflow: "visible" }}>
-                              <div style={{ position: "absolute", inset: 0, display: "flex", pointerEvents: "none", zIndex: 0 }}>
-                                {ganttChartData.monthGroups.map((month, idx) => {
-                                  const monthWidth = (month.daysInRange / ganttChartData.totalDays) * 100;
-                                  return (
-                                    <div
-                                      key={idx}
-                                      style={{
-                                        width: `${monthWidth}%`,
-                                        height: "100%",
-                                        borderRight: "2px solid #505050",
-                                        display: "flex",
-                                        background: idx % 2 === 0 ? "transparent" : "rgba(100, 100, 100, 0.1)",
-                                      }}
-                                    />
-                                  );
-                                })}
-                              </div>
-
-                              {showBar && (
-                                <div
-                                  className="gantt-timeline-bar"
-                                  onMouseEnter={(e) => handleGanttBarEnter(tooltip, e)}
-                                  onMouseLeave={handleGanttBarLeave}
-                                  style={{
-                                    position: "absolute",
-                                    left: `${Math.max(0, barStartPercent)}%`,
-                                    width: `${Math.min(barWidthPercent, 100 - Math.max(0, barStartPercent))}%`,
-                                    height: "30px",
-                                    top: "5px",
-                                    background: item.status === "completed" ? "#3a5a3a" : item.status === "in-progress" ? taskColor : "#6a6a6a",
-                                    borderRadius: "4px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    color: item.status === "in-progress" ? "#1a1a1a" : "#ffffff",
-                                    fontSize: isBarHovered ? "10px" : "11px",
-                                    fontWeight: "600",
-                                    border: `2px solid ${taskColor}`,
-                                    minWidth: "40px",
-                                    zIndex: 2,
-                                    cursor: "pointer",
-                                    boxShadow: isBarHovered ? `0 0 12px ${taskColor}80` : `0 0 8px ${taskColor}40`,
-                                    padding: "0 4px",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                  }}
-                                >
-                                  {barLabel}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </>
-                  )}
-                </div>
+                <GanttChart planningItems={selectedCampaign.planningItems} />
 
                 {/* Legend */}
                 <div style={{ marginTop: "20px", padding: "15px", background: "#4a4a4a", borderRadius: "6px", display: "flex", gap: "20px", flexWrap: "wrap", fontSize: "13px", color: "#ffffff" }}>
@@ -2704,21 +2714,6 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
-      {ganttHover && createPortal(
-        <div
-          className="gantt-portal-tooltip"
-          style={{
-            top: ganttHover.rect.top - 10,
-            left: ganttHover.rect.left + ganttHover.rect.width / 2,
-          }}
-        >
-          <div className="gantt-portal-tooltip-title">{ganttHover.name}</div>
-          <div>Start: {ganttHover.startLabel}</div>
-          <div>End: {ganttHover.endLabel}</div>
-          <div>{ganttHover.durationDays} day{ganttHover.durationDays !== 1 ? "s" : ""}</div>
-        </div>,
-        document.body
       )}
     </div>
   );
