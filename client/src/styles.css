@@ -401,6 +401,62 @@ body {
   background: #3a4a3a;
 }
 
+.gantt-chart-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-top: 8px;
+  padding-bottom: 120px;
+}
+
+.gantt-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+}
+
+.gantt-row:has(.gantt-timeline-bar:hover) {
+  z-index: 200;
+}
+
+.gantt-row-label {
+  width: 200px;
+  color: #ffffff;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  padding-left: 4px;
+  flex-shrink: 0;
+}
+
+.gantt-row-track {
+  flex: 1;
+  position: relative;
+  height: 40px;
+  overflow: visible;
+}
+
+.gantt-row-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gantt-row-grid-cell {
+  height: 100%;
+  border-right: 2px solid #505050;
+  display: flex;
+}
+
+.gantt-row-grid-cell:nth-child(even) {
+  background: rgba(100, 100, 100, 0.1);
+}
+
 .gantt-timeline-bar {
   cursor: pointer;
   display: flex;
@@ -408,6 +464,7 @@ body {
   justify-content: center;
   overflow: visible;
   padding: 0 4px;
+  z-index: 2;
 }
 
 .gantt-bar-duration {
@@ -427,13 +484,6 @@ body {
   align-items: center;
 }
 
-.gantt-chart-scroll {
-  overflow-x: auto;
-  overflow-y: visible;
-  padding-top: 8px;
-  padding-bottom: 120px;
-}
-
 .gantt-bar-tooltip {
   display: none;
   position: absolute;
@@ -447,7 +497,7 @@ body {
   font-size: 12px;
   line-height: 1.5;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 300;
   border: 2px solid #d4af37;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
   min-width: 220px;
@@ -457,7 +507,7 @@ body {
 }
 
 .gantt-timeline-bar:hover {
-  z-index: 20;
+  z-index: 10;
   box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
 }
 

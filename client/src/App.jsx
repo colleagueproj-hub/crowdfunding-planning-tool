@@ -213,24 +213,17 @@ function GanttChart({ planningItems }) {
         </div>
 
         {chartData.rows.map((row) => (
-          <div key={row.itemKey} style={{ display: "flex", alignItems: "center", marginBottom: "15px", fontSize: "13px" }}>
-            <div style={{ width: "200px", color: "#ffffff", fontWeight: "500", overflow: "hidden", textOverflow: "ellipsis", fontSize: "13px", paddingLeft: "4px" }}>
-              {row.item.name}
-            </div>
-            <div style={{ flex: 1, position: "relative", height: "40px", overflow: "visible" }}>
-              <div style={{ position: "absolute", inset: 0, display: "flex", pointerEvents: "none", zIndex: 0 }}>
+          <div key={row.itemKey} className="gantt-row">
+            <div className="gantt-row-label">{row.item.name}</div>
+            <div className="gantt-row-track">
+              <div className="gantt-row-grid">
                 {chartData.monthGroups.map((month, idx) => {
                   const monthWidth = (month.daysInRange / chartData.totalDays) * 100;
                   return (
                     <div
                       key={idx}
-                      style={{
-                        width: `${monthWidth}%`,
-                        height: "100%",
-                        borderRight: "2px solid #505050",
-                        display: "flex",
-                        background: idx % 2 === 0 ? "transparent" : "rgba(100, 100, 100, 0.1)",
-                      }}
+                      className="gantt-row-grid-cell"
+                      style={{ width: `${monthWidth}%` }}
                     />
                   );
                 })}
