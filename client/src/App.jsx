@@ -46,8 +46,24 @@ const formatPlanningDateKey = (dateStr) => {
   return `${year}-${month}-${day}`;
 };
 
+const EVENT_TYPES = [
+  { id: "general", label: "General" },
+  { id: "recordings", label: "Recordings" },
+  { id: "live-show", label: "Live show" },
+  { id: "headstart", label: "HeadStart" },
+];
+
+const EVENT_TYPE_IDS = EVENT_TYPES.map((t) => t.id);
+
+const getEventTypeLabel = (typeId) =>
+  EVENT_TYPES.find((t) => t.id === typeId)?.label || "General";
+
+const getPlanningItemType = (item) =>
+  EVENT_TYPE_IDS.includes(item?.type) ? item.type : "general";
+
 const normalizePlanningItem = (item) => ({
   ...item,
+  type: getPlanningItemType(item),
   startDate: formatPlanningDateKey(item?.startDate ?? item?.start_date) || item?.startDate || item?.start_date || "",
   endDate: formatPlanningDateKey(item?.endDate ?? item?.end_date) || item?.endDate || item?.end_date || "",
 });
@@ -85,6 +101,54 @@ const GANTT_TASK_COLORS = [
   "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8",
   "#F7DC6F", "#BB8FCE", "#85C1E2", "#F8B88B", "#52C4A1",
 ];
+
+const emptyPlanningItemForm = () => ({
+  name: "",
+  startDate: "",
+  endDate: "",
+  type: "general",
+  status: "not-started",
+  owners: [],
+  participants: [],
+  reminderEnabled: false,
+  reminderDays: 1,
+});
+
+function EventTypeFilter({ selectedTypes, onChange }) {
+  const toggleType = (typeId) => {
+    if (selectedTypes.includes(typeId)) {
+      onChange(selectedTypes.filter((id) => id !== typeId));
+    } else {
+      onChange([...selectedTypes, typeId]);
+    }
+  };
+
+  return (
+    <div className="event-type-filter">
+      <div className="event-type-filter-title">Filter by event type</div>
+      <div className="event-type-filter-options">
+        {EVENT_TYPES.map((type) => (
+          <label key={type.id} className="event-type-filter-option">
+            <input
+              type="checkbox"
+              checked={selectedTypes.includes(type.id)}
+              onChange={() => toggleType(type.id)}
+            />
+            <span>{type.label}</span>
+          </label>
+        ))}
+      </div>
+      <div className="event-type-filter-actions">
+        <button type="button" className="btn-small" onClick={() => onChange([...EVENT_TYPE_IDS])}>
+          Select all
+        </button>
+        <button type="button" className="btn-small btn-secondary" onClick={() => onChange([])}>
+          Clear all
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const buildGanttChartData = (planningItems) => {
   const sortedItems = sortPlanningItemsByStartDate(planningItems);
@@ -140,6 +204,7 @@ const buildGanttChartData = (planningItems) => {
       tooltip: {
         id: itemKey,
         name: item.name,
+        typeLabel: getEventTypeLabel(getPlanningItemType(item)),
         startLabel: formatPlanningFullDate(startDate),
         endLabel: formatPlanningFullDate(endDate),
         durationDays,
@@ -184,6 +249,7 @@ const GanttTimelineBar = React.memo(function GanttTimelineBar({ row }) {
       <span className="gantt-bar-duration">{durationDays}d</span>
       <div className="gantt-bar-tooltip" role="tooltip">
         <div className="gantt-bar-tooltip-title">{tooltip.name}</div>
+        <div>Type: {tooltip.typeLabel}</div>
         <div>Start: {tooltip.startLabel}</div>
         <div>End: {tooltip.endLabel}</div>
         <div>{tooltip.durationDays} day{tooltip.durationDays !== 1 ? "s" : ""}</div>
@@ -300,16 +366,8 @@ export default function App() {
   const [newOwnerName, setNewOwnerName] = useState("");
   const [newParticipantName, setNewParticipantName] = useState("");
   const [showCampaignSettings, setShowCampaignSettings] = useState(false);
-  const [newItemForm, setNewItemForm] = useState({
-    name: "",
-    startDate: "",
-    endDate: "",
-    status: "not-started",
-    owners: [],
-    participants: [],
-    reminderEnabled: false,
-    reminderDays: 1,
-  });
+  const [newItemForm, setNewItemForm] = useState(emptyPlanningItemForm);
+  const [eventTypeFilter, setEventTypeFilter] = useState(() => [...EVENT_TYPE_IDS]);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
   const [newBudgetItem, setNewBudgetItem] = useState({
@@ -731,6 +789,12 @@ export default function App() {
     [selectedCampaign?.planningItems]
   );
 
+  const filteredPlanningItems = useMemo(() => {
+    if (!eventTypeFilter.length) return [];
+    if (eventTypeFilter.length === EVENT_TYPE_IDS.length) return sortedPlanningItems;
+    return sortedPlanningItems.filter((item) => eventTypeFilter.includes(getPlanningItemType(item)));
+  }, [sortedPlanningItems, eventTypeFilter]);
+
   const handleCreateCampaign = async () => {
     if (!newCampaignName.trim()) return;
     
@@ -964,6 +1028,7 @@ export default function App() {
       name: newItemForm.name,
       startDate: formatPlanningDateKey(newItemForm.startDate) || newItemForm.startDate,
       endDate: formatPlanningDateKey(newItemForm.endDate) || newItemForm.endDate,
+      type: getPlanningItemType({ type: newItemForm.type }),
       status: newItemForm.status,
       owners: newItemForm.owners,
       participants: participants,
@@ -986,16 +1051,7 @@ export default function App() {
     // Save to backend
     await saveCampaignToSheet(updatedCampaign);
     
-    setNewItemForm({
-      name: "",
-      startDate: "",
-      endDate: "",
-      status: "not-started",
-      owners: [],
-      participants: [],
-      reminderEnabled: false,
-      reminderDays: 1,
-    });
+    setNewItemForm(emptyPlanningItemForm());
     setShowAddItemModal(false);
     setEditingItemId(null);
   };
@@ -1006,6 +1062,7 @@ export default function App() {
       name: item.name,
       startDate: item.startDate,
       endDate: item.endDate,
+      type: getPlanningItemType(item),
       status: item.status,
       owners: item.owners || [],
       participants: item.participants || [],
@@ -1540,7 +1597,7 @@ export default function App() {
                 </div>
               ) : (
                 <button onClick={() => {
-                  setNewItemForm({ name: "", startDate: "", endDate: "", status: "not-started", owners: [], participants: [], reminderEnabled: false, reminderDays: 1 });
+                  setNewItemForm(emptyPlanningItemForm());
                   setEditingItemId(null);
                   setShowAddItemModal(true);
                 }} className="btn-primary">
@@ -1550,10 +1607,13 @@ export default function App() {
             </>
           )}
 
+          <EventTypeFilter selectedTypes={eventTypeFilter} onChange={setEventTypeFilter} />
+
           <table className="items-table">
             <thead>
               <tr>
                 <th>Task</th>
+                <th>Type</th>
                 <th>Start Date</th>
                 <th>End Date</th>
                 <th>Status</th>
@@ -1564,9 +1624,18 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {sortedPlanningItems.map(item => (
+              {filteredPlanningItems.length === 0 ? (
+                <tr>
+                  <td colSpan={canEdit ? 9 : 8} style={{ textAlign: "center", padding: "20px", color: "#b0b0b0" }}>
+                    {sortedPlanningItems.length === 0
+                      ? "No planning items yet"
+                      : "No events match the selected type filter"}
+                  </td>
+                </tr>
+              ) : filteredPlanningItems.map(item => (
                 <tr key={item.id}>
                   <td>{item.name}</td>
+                  <td><span className="badge event-type-badge">{getEventTypeLabel(getPlanningItemType(item))}</span></td>
                   <td>{item.startDate}</td>
                   <td>{item.endDate}</td>
                   <td><span className={`badge status-${item.status}`}>{item.status}</span></td>
@@ -1597,6 +1666,13 @@ export default function App() {
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Task Name</label>
                 <input type="text" placeholder="Task name" value={newItemForm.name} onChange={e => setNewItemForm({...newItemForm, name: e.target.value})} className="input-field" />
+
+                <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>Type</label>
+                <select value={newItemForm.type} onChange={e => setNewItemForm({...newItemForm, type: e.target.value})} className="input-field">
+                  {EVENT_TYPES.map((type) => (
+                    <option key={type.id} value={type.id}>{type.label}</option>
+                  ))}
+                </select>
                 
                 <label style={{ marginTop: "15px", display: "block", marginBottom: "5px", color: "#d4af37", fontWeight: "600" }}>📅 Start Date</label>
                 <div style={{ display: "flex", gap: "10px" }}>
@@ -1839,20 +1915,26 @@ export default function App() {
       {activeTab === "calendar" && (
         <div className="tab-content">
           <h2>📅 Project Timeline & Gantt Chart</h2>
+          <EventTypeFilter selectedTypes={eventTypeFilter} onChange={setEventTypeFilter} />
           {selectedCampaign?.planningItems.length === 0 ? (
             <p style={{ textAlign: "center", padding: "20px", color: "#ffffff" }}>No planning items yet</p>
+          ) : filteredPlanningItems.length === 0 ? (
+            <p style={{ textAlign: "center", padding: "20px", color: "#b0b0b0" }}>No events match the selected type filter</p>
           ) : (
             <div>
               {/* Calendar View */}
               <div style={{ marginBottom: "40px" }}>
                 <h3 style={{ marginBottom: "15px", color: "#ffffff" }}>📆 Events by Month</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px" }}>
-                  {sortedPlanningItems.map((item) => {
+                  {filteredPlanningItems.map((item) => {
                     const startDate = new Date(item.startDate);
                     const endDate = new Date(item.endDate);
                     return (
                       <div key={item.id} style={{ background: "#4a4a4a", padding: "15px", borderRadius: "8px", border: "1px solid #606060" }}>
                         <div style={{ color: "#ffffff", fontWeight: "600", marginBottom: "8px" }}>{item.name}</div>
+                        <div style={{ fontSize: "13px", color: "#d4af37", marginBottom: "5px" }}>
+                          🏷️ {getEventTypeLabel(getPlanningItemType(item))}
+                        </div>
                         <div style={{ fontSize: "13px", color: "#ffffff", marginBottom: "5px" }}>
                           📅 {startDate.toLocaleDateString()} → {endDate.toLocaleDateString()}
                         </div>
@@ -1872,7 +1954,7 @@ export default function App() {
               {/* Gantt Chart */}
               <div>
                 <h3 style={{ marginBottom: "15px", color: "#ffffff" }}>📊 Gantt Chart Timeline</h3>
-                <GanttChart planningItems={sortedPlanningItems} />
+                <GanttChart planningItems={filteredPlanningItems} />
 
                 {/* Legend */}
                 <div style={{ marginTop: "20px", padding: "15px", background: "#4a4a4a", borderRadius: "6px", display: "flex", gap: "20px", flexWrap: "wrap", fontSize: "13px", color: "#ffffff" }}>
