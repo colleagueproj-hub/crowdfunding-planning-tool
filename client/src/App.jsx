@@ -726,6 +726,11 @@ export default function App() {
     }
   }, [selectedCampaign]);
 
+  const sortedPlanningItems = useMemo(
+    () => sortPlanningItemsByStartDate(selectedCampaign?.planningItems || []),
+    [selectedCampaign?.planningItems]
+  );
+
   const handleCreateCampaign = async () => {
     if (!newCampaignName.trim()) return;
     
@@ -1390,11 +1395,6 @@ export default function App() {
     const qty = item?.quantity != null && item.quantity !== "" ? Number(item.quantity) : 1;
     return sum + (price * (Number.isNaN(qty) ? 1 : qty));
   }, 0);
-
-  const sortedPlanningItems = useMemo(
-    () => sortPlanningItemsByStartDate(selectedCampaign?.planningItems || []),
-    [selectedCampaign?.planningItems]
-  );
 
   return (
     <div className="container">
