@@ -526,6 +526,10 @@ body {
   transition: none;
 }
 
+.delete-campaign-modal {
+  max-width: 520px;
+}
+
 .login-modal {
   text-align: center;
 }

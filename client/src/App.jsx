@@ -7,6 +7,12 @@ import { fetchCampaignsFromSheet, saveCampaignToSheet, getLoggedInUser, logoutUs
 const parsePlanningDate = (dateStr) => {
   if (!dateStr) return new Date(NaN);
   if (dateStr instanceof Date) return dateStr;
+  if (typeof dateStr === "number") {
+    const parsed = new Date(dateStr);
+    if (!Number.isNaN(parsed.getTime())) {
+      return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+    }
+  }
   const str = String(dateStr).trim();
   if (str.includes("T")) {
     const parsed = new Date(str);
@@ -14,10 +20,55 @@ const parsePlanningDate = (dateStr) => {
       return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
     }
   }
-  const datePart = str.split("T")[0];
-  const [year, month, day] = datePart.split("-").map(Number);
-  if (!year || !month || !day) return new Date(NaN);
-  return new Date(year, month - 1, day);
+  const isoMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch.map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const usMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (usMatch) {
+    const [, month, day, year] = usMatch.map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const parsed = new Date(str);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
+  return new Date(NaN);
+};
+
+const formatPlanningDateKey = (dateStr) => {
+  const parsed = parsePlanningDate(dateStr);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const normalizePlanningItem = (item) => ({
+  ...item,
+  startDate: formatPlanningDateKey(item?.startDate ?? item?.start_date) || item?.startDate || item?.start_date || "",
+  endDate: formatPlanningDateKey(item?.endDate ?? item?.end_date) || item?.endDate || item?.end_date || "",
+});
+
+const sortPlanningItemsByStartDate = (items) => {
+  if (!Array.isArray(items)) return [];
+  const startTime = (item) => {
+    const time = parsePlanningDate(item?.startDate).getTime();
+    return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+  };
+  const endTime = (item) => {
+    const time = parsePlanningDate(item?.endDate).getTime();
+    return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+  };
+  return [...items].map(normalizePlanningItem).sort((a, b) => {
+    const startDiff = startTime(a) - startTime(b);
+    if (startDiff !== 0) return startDiff;
+    const endDiff = endTime(a) - endTime(b);
+    if (endDiff !== 0) return endDiff;
+    return String(a?.name || "").localeCompare(String(b?.name || ""));
+  });
 };
 
 const formatPlanningFullDate = (date) => {
@@ -36,7 +87,8 @@ const GANTT_TASK_COLORS = [
 ];
 
 const buildGanttChartData = (planningItems) => {
-  const dates = planningItems.flatMap((item) => [
+  const sortedItems = sortPlanningItemsByStartDate(planningItems);
+  const dates = sortedItems.flatMap((item) => [
     parsePlanningDate(item.startDate),
     parsePlanningDate(item.endDate),
   ]);
@@ -66,7 +118,7 @@ const buildGanttChartData = (planningItems) => {
 
   const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
 
-  const rows = planningItems.map((item, itemIdx) => {
+  const rows = sortedItems.map((item, itemIdx) => {
     const startDate = parsePlanningDate(item.startDate);
     const endDate = parsePlanningDate(item.endDate);
     const itemKey = String(item.id ?? `gantt-${itemIdx}`);
@@ -244,6 +296,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("plan");
   const [newCampaignName, setNewCampaignName] = useState("");
   const [showNewCampaignForm, setShowNewCampaignForm] = useState(false);
+  const [showDeleteCampaignModal, setShowDeleteCampaignModal] = useState(false);
   const [newOwnerName, setNewOwnerName] = useState("");
   const [newParticipantName, setNewParticipantName] = useState("");
   const [showCampaignSettings, setShowCampaignSettings] = useState(false);
@@ -418,7 +471,7 @@ export default function App() {
     }
   };
 
-  const getAlbumDefaultPlanningItems = () => [
+  const getAlbumDefaultPlanningItems = () => sortPlanningItemsByStartDate([
     {
       id: "item_1787744718226",
       name: "הגדרת נראטיב לקמפיין",
@@ -474,7 +527,7 @@ export default function App() {
       reminderEnabled: true,
       reminderDays: 1
     }
-  ];
+  ]);
 
   const loadCampaigns = async () => {
     const loaded = await fetchCampaignsFromSheet(getDefaultSheetId());
@@ -497,9 +550,12 @@ export default function App() {
     }
 
     setCampaigns(normalized);
-    if (normalized.length > 0 && !selectedCampaign) {
+    if (normalized.length > 0) {
       const defaultCampaign = normalized.find(c => c.name === "Weeping Willow Tree first album and live show") || normalized[0];
-      setSelectedCampaign(defaultCampaign);
+      const nextSelected = selectedCampaign
+        ? normalized.find(c => c.id === selectedCampaign.id) || defaultCampaign
+        : defaultCampaign;
+      setSelectedCampaign(nextSelected);
     }
   };
 
@@ -622,7 +678,7 @@ export default function App() {
     currency: campaign.currency || "ILS",
     owners: Array.isArray(campaign.owners) ? campaign.owners : [],
     participants: Array.isArray(campaign.participants) ? campaign.participants : [],
-    planningItems: Array.isArray(campaign.planningItems) ? campaign.planningItems : [],
+    planningItems: sortPlanningItemsByStartDate(Array.isArray(campaign.planningItems) ? campaign.planningItems : []),
     budgetItems: Array.isArray(campaign.budgetItems) ? campaign.budgetItems : [],
     gifts: Array.isArray(campaign.gifts) ? campaign.gifts : [],
     created_at: campaign.created_at || new Date().toISOString(),
@@ -642,11 +698,11 @@ export default function App() {
 
   const handleDeleteCampaign = async () => {
     if (!user?.is_admin || !selectedCampaign) return;
-    if (!window.confirm(`Delete campaign "${selectedCampaign.name}"? This cannot be undone.`)) return;
-    
+
     const updated = campaigns.filter(c => c.id !== selectedCampaign.id);
     setCampaigns(updated);
     setSelectedCampaign(updated.length > 0 ? updated[0] : null);
+    setShowDeleteCampaignModal(false);
   };
 
   const handleLogout = () => {
@@ -899,10 +955,10 @@ export default function App() {
     }
 
     const item = {
-      id: `item_${Date.now()}`,
+      id: editingItemId || `item_${Date.now()}`,
       name: newItemForm.name,
-      startDate: newItemForm.startDate,
-      endDate: newItemForm.endDate,
+      startDate: formatPlanningDateKey(newItemForm.startDate) || newItemForm.startDate,
+      endDate: formatPlanningDateKey(newItemForm.endDate) || newItemForm.endDate,
       status: newItemForm.status,
       owners: newItemForm.owners,
       participants: participants,
@@ -910,11 +966,13 @@ export default function App() {
       reminderDays: newItemForm.reminderDays,
     };
 
+    const updatedItems = editingItemId
+      ? selectedCampaign.planningItems.map(i => i.id === editingItemId ? item : i)
+      : [...selectedCampaign.planningItems, item];
+
     const updatedCampaign = {
       ...selectedCampaign,
-      planningItems: editingItemId
-        ? selectedCampaign.planningItems.map(i => i.id === editingItemId ? item : i)
-        : [...selectedCampaign.planningItems, item],
+      planningItems: sortPlanningItemsByStartDate(updatedItems),
     };
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
@@ -1333,6 +1391,11 @@ export default function App() {
     return sum + (price * (Number.isNaN(qty) ? 1 : qty));
   }, 0);
 
+  const sortedPlanningItems = useMemo(
+    () => sortPlanningItemsByStartDate(selectedCampaign?.planningItems || []),
+    [selectedCampaign?.planningItems]
+  );
+
   return (
     <div className="container">
       <div className="header">
@@ -1390,7 +1453,7 @@ export default function App() {
             <button onClick={() => { loadAllUsers(); setShowNewCampaignForm(true); }} className="btn-small">+ Campaign</button>
           )}
           {canCreateCampaign && selectedCampaign && (
-            <button onClick={handleDeleteCampaign} className="btn-small btn-danger">🗑️ Delete</button>
+            <button onClick={() => setShowDeleteCampaignModal(true)} className="btn-small btn-danger">🗑️ Delete</button>
           )}
           {canEdit && (
             <button onClick={() => { loadAllUsers(); setShowCampaignSettings(true); }} className="btn-small">⚙️ Settings</button>
@@ -1501,7 +1564,7 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {selectedCampaign?.planningItems.map(item => (
+              {sortedPlanningItems.map(item => (
                 <tr key={item.id}>
                   <td>{item.name}</td>
                   <td>{item.startDate}</td>
@@ -1784,7 +1847,7 @@ export default function App() {
               <div style={{ marginBottom: "40px" }}>
                 <h3 style={{ marginBottom: "15px", color: "#ffffff" }}>📆 Events by Month</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px" }}>
-                  {selectedCampaign.planningItems.map((item) => {
+                  {sortedPlanningItems.map((item) => {
                     const startDate = new Date(item.startDate);
                     const endDate = new Date(item.endDate);
                     return (
@@ -1809,7 +1872,7 @@ export default function App() {
               {/* Gantt Chart */}
               <div>
                 <h3 style={{ marginBottom: "15px", color: "#ffffff" }}>📊 Gantt Chart Timeline</h3>
-                <GanttChart planningItems={selectedCampaign.planningItems} />
+                <GanttChart planningItems={sortedPlanningItems} />
 
                 {/* Legend */}
                 <div style={{ marginTop: "20px", padding: "15px", background: "#4a4a4a", borderRadius: "6px", display: "flex", gap: "20px", flexWrap: "wrap", fontSize: "13px", color: "#ffffff" }}>
@@ -2422,6 +2485,35 @@ export default function App() {
             <div className="modal-buttons">
               <button onClick={handleCreateCampaign} className="btn-primary">Save</button>
               <button onClick={() => setShowNewCampaignForm(false)} className="btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteCampaignModal && canCreateCampaign && selectedCampaign && (
+        <div className="modal-overlay" onClick={() => setShowDeleteCampaignModal(false)}>
+          <div className="modal delete-campaign-modal" onClick={e => e.stopPropagation()}>
+            <h2 style={{ color: "#ff6b6b", marginBottom: "16px" }}>Are you sure you want to delete?</h2>
+            <p style={{ color: "#ffffff", marginBottom: "12px", fontSize: "15px" }}>
+              You are about to permanently delete the campaign:
+            </p>
+            <p style={{ color: "#d4af37", fontWeight: "700", fontSize: "16px", marginBottom: "16px" }}>
+              &ldquo;{selectedCampaign.name}&rdquo;
+            </p>
+            <div style={{ background: "#4a3030", border: "2px solid #ff6b6b", borderRadius: "8px", padding: "14px", marginBottom: "20px" }}>
+              <p style={{ color: "#ffcccc", fontWeight: "600", marginBottom: "10px" }}>
+                ⚠️ This action cannot be undone. All campaign data will be lost, including:
+              </p>
+              <ul style={{ color: "#ffffff", marginLeft: "20px", lineHeight: 1.7, fontSize: "14px" }}>
+                <li>Planning items and timeline</li>
+                <li>Budget items and totals</li>
+                <li>Gifts and pricing</li>
+                <li>Owners, participants, and campaign settings</li>
+              </ul>
+            </div>
+            <div className="modal-buttons">
+              <button onClick={handleDeleteCampaign} className="btn-danger">Yes, delete everything</button>
+              <button onClick={() => setShowDeleteCampaignModal(false)} className="btn-secondary">Cancel</button>
             </div>
           </div>
         </div>
